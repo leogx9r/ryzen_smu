@@ -89,6 +89,11 @@ extern uint smu_timeout_ms;
 int smu_init(struct pci_dev* dev);
 
 /**
+ * Cleans up the allocated objects after use.
+ */
+void smu_cleanup(void);
+
+/**
  * Returns the running processor's detected code name.
  */
 enum smu_processor_codename smu_get_codename(void);

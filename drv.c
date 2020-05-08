@@ -261,6 +261,8 @@ static void ryzen_smu_remove(struct pci_dev *dev) {
 
     if (g_driver.drv_kobj)
         kobject_put(g_driver.drv_kobj);
+
+    smu_cleanup();
 }
 
 static struct pci_device_id ryzen_smu_id_table[] = {

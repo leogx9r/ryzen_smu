@@ -18,9 +18,11 @@ static struct {
     u32                            addr_mb_args;
 
     u32                            pm_dram_base;
-    u32                            pm_dram_map_size;
+    u32                            pm_dram_max_map_size;
     u32                            pm_dram_min_map_size;
     u64                            pm_last_probe_ns;
+
+    u8*                            pm_table_virt_addr;
 } g_smu = {
     .codename                    = CODENAME_UNDEFINED,
 
@@ -29,9 +31,11 @@ static struct {
     .addr_mb_args                = 0,
 
     .pm_dram_base                = 0,
-    .pm_dram_map_size            = 0,
+    .pm_dram_max_map_size        = 0,
     .pm_dram_min_map_size        = 0,
     .pm_last_probe_ns            = 0,
+
+    .pm_table_virt_addr          = NULL,
 };
 
 static DEFINE_MUTEX(amd_pci_mutex);
@@ -210,6 +214,11 @@ int smu_init(struct pci_dev* dev) {
     return 0;
 }
 
+void smu_cleanup(void) {
+    if (g_smu.pm_table_virt_addr)
+        iounmap(g_smu.pm_table_virt_addr);
+}
+
 enum smu_processor_codename smu_get_codename(void) {
     return g_smu.codename;
 }
@@ -342,13 +351,12 @@ enum smu_return_val smu_probe_pm_table(struct pci_dev* dev) {
 }
 
 enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, size_t* len) {
-    char* pm_table_virt_addr;
-    u32 ret, i;
+    u32 ret;
     u64 tm;
 
     // The DRAM base does not change across boots meaning it only needs to be
     //  fetched once.
-    if (g_smu.pm_dram_base == 0 || g_smu.pm_dram_map_size == 0) {
+    if (g_smu.pm_dram_base == 0 || g_smu.pm_dram_max_map_size == 0) {
         // For Picasso/RavenRidge, we ignore the second segment in the upper
         //  32 bits which is a block that's 0xA4 bytes long.
         g_smu.pm_dram_base = smu_get_dram_base_address(dev);
@@ -361,16 +369,16 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
         // Each model has different maximum sizes.
         switch (g_smu.codename) {
             case CODENAME_MATISSE:
-                g_smu.pm_dram_map_size = 0x7E4;
+                g_smu.pm_dram_max_map_size = 0x7E4;
                 g_smu.pm_dram_min_map_size = 0x514;
                 break;
             case CODENAME_RENOIR:
-                g_smu.pm_dram_map_size = 0x88C;
+                g_smu.pm_dram_max_map_size = 0x88C;
                 g_smu.pm_dram_min_map_size = 0x794;
                 break;
             case CODENAME_PICASSO:
             case CODENAME_RAVENRIDGE2:
-                g_smu.pm_dram_min_map_size = g_smu.pm_dram_map_size = 0x608;
+                g_smu.pm_dram_min_map_size = g_smu.pm_dram_max_map_size = 0x608;
                 break;
             default:
                 return SMU_Return_Unsupported;
@@ -380,8 +388,8 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
     if (!dst || g_smu.pm_dram_min_map_size > *len || (*len % sizeof(unsigned int)) != 0)
         return SMU_Return_InsufficientSize;
 
-    if (*len > g_smu.pm_dram_map_size)
-        *len = g_smu.pm_dram_map_size;
+    if (*len > g_smu.pm_dram_max_map_size)
+        *len = g_smu.pm_dram_max_map_size;
 
     tm = ktime_get_ns();
     if ((tm - g_smu.pm_last_probe_ns) > (1000000 * smu_pm_update_ms)) {
@@ -392,14 +400,14 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
         g_smu.pm_last_probe_ns = tm;
     }
 
-    pm_table_virt_addr = ioremap(g_smu.pm_dram_base, *len);
-    if (pm_table_virt_addr == NULL)
-        return SMU_Return_MappedError;
+    if (g_smu.pm_table_virt_addr == NULL) {
+        g_smu.pm_table_virt_addr = ioremap(g_smu.pm_dram_base, g_smu.pm_dram_max_map_size);
 
-    for (i = 0; i < *len; i += sizeof(unsigned int))
-        *(int*)(dst + i) = readl(pm_table_virt_addr + i);
+        if (g_smu.pm_table_virt_addr == NULL)
+            return SMU_Return_MappedError;
+    }
 
-    iounmap(pm_table_virt_addr);
+    memcpy(dst, g_smu.pm_table_virt_addr, *len);
 
     return SMU_Return_OK;
 }
