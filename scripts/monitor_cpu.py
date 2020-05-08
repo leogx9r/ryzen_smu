@@ -189,8 +189,8 @@ def parse_pm_table():
 
         if codename != False:
             print("Code Name: " + codename)
-        print("Model: " + model)
         print("CCDs: {0} | Cores: {1}".format(ccds, cores))
+        print("Model: " + model)
 
         totalA = peakFreq = i = 0
         while i < cores:
@@ -208,7 +208,10 @@ def parse_pm_table():
                 print("Core #{:d}: Sleeping  ({:4.2f} %)".format(i, activity))
             i = i + 1
 
+        peakV = read_float(pm, 0x02C)
+
         print("Peak Frequency: {:.0f} MHz".format(peakFreq))
+        print("Peak Voltage:   {:2.4f} V".format(peakV))
         
         pptW  = read_float(pm, 0x000)
         pptU  = read_float(pm, 0x004)
@@ -233,6 +236,7 @@ def parse_pm_table():
         print("EDC:   {:4.2f} A / {:4.0f} A ({:3.2f}%)".format(edcU, edcA, (edcU / edcA * 100)))
         print("============================================\n")
 
+        SoCV  = read_float(pm, 0x0B0)
         fclkMHz = read_float(pm, 0x118)
         uclkMHz = read_float(pm, 0x128)
         mclkMHz = read_float(pm, 0x138)
@@ -249,6 +253,7 @@ def parse_pm_table():
         print("FCLK:         {:.0f} MHz".format(fclkMHz))
         print("UCLK:         {:.0f} MHz".format(uclkMHz))
         print("MCLK:         {:.0f} MHz".format(mclkMHz))
+        print("SoC:          {:.4f} V".format(SoCV))
         print("VDDP:         {:.4f} V".format(vddpV))
         print("VDDG:         {:.4f} V".format(vddgV))
         print("============================================")
