@@ -252,7 +252,7 @@ _CONTINUE_SETUP:
     g_driver.drv_kobj = kobject_create_and_add("ryzen_smu_drv", kernel_kobj);
     if (!g_driver.drv_kobj) {
         pr_err("Unable to create sysfs interface");
-        goto _CONTINUE_SETUP;
+        return -EINVAL;
     }
 
     if (sysfs_create_group(g_driver.drv_kobj, &drv_attr_group))
