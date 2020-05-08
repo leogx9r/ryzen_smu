@@ -9,12 +9,13 @@ from time import sleep
 sys.path.append(os.path.abspath("."))
 import cpuid
 
-_cpuid   = None
+_cpuid   = cpuid.CPUID()
 
 FS_PATH  = '/sys/kernel/ryzen_smu_drv/'
 SMN_PATH = FS_PATH + 'smn'
 VER_PATH = FS_PATH + 'version'
 PM_PATH  = FS_PATH + 'pm_table'
+CN_PATH  = FS_PATH + 'codename'
 
 def is_root():
     return os.getenv("SUDO_USER") is not None or os.geteuid() == 0
@@ -86,6 +87,28 @@ def read_double(buffer, offset):
 def read_int(buffer, offset):
     return struct.unpack("@I", buffer[offset:(offset + 4)])[0]
 
+def getCodeName():
+    codenames = [
+        "Unspecified",
+        "Colfax",
+        "Renoir",
+        "Picasso",
+        "Matisse",
+        "Threadripper",
+        "Castle Peak",
+        "Raven Ridge",
+        "Raven Ridge 2",
+        "Summit Ridge",
+        "Pinnacle Ridge"
+
+    ]
+    args = read_file_str(CN_PATH, 2)
+
+    if args != False and int(args) != 0:
+        return codenames[int(args)]
+
+    return False
+
 def getCCDCount():
     ccdCount = 0
 
@@ -124,10 +147,6 @@ def getCCDCount():
     return ccdCount
 
 def getCoreCount():
-    global _cpuid
-    if _cpuid is None:
-        _cpuid = cpuid.CPUID()
-
     eax, ebx, ecx, edx = _cpuid(0x00000001)
     logicalCores = (ebx >> 16) & 0xFF
 
@@ -139,19 +158,39 @@ def getCoreCount():
 
     return int(logicalCores / threadsPerCore)
 
-def parse_pm_table():
-    while True:
-        print("\033c")
+def intToStr(val):
+    return '{:c}{:c}{:c}{:c}' \
+        .format(val & 0xff, val >> 8 & 0xff, val >> 16 & 0xff, val >> 24 & 0xff)
 
+def getCpuModel():
+    model = ''
+
+    eax, ebx, ecx, edx = _cpuid(0x80000002)
+    model = model + intToStr(eax) + intToStr(ebx) + intToStr(ecx) + intToStr(edx)
+
+    eax, ebx, ecx, edx = _cpuid(0x80000003)
+    model = model + intToStr(eax) + intToStr(ebx) + intToStr(ecx) + intToStr(edx)
+
+    eax, ebx, ecx, edx = _cpuid(0x80000004)
+    model = model + intToStr(eax) + intToStr(ebx) + intToStr(ecx) + intToStr(edx)
+
+    return model.rstrip(' ')
+
+def parse_pm_table():
+    codename = getCodeName()
+    ccds     = getCCDCount()
+    cores    = getCoreCount()
+    model    = getCpuModel()
+
+    while True:
         pm = read_pm_table()
 
-        print("===========  CPU INFO  ===========")
+        print("\033c================  CPU INFO  ================")
 
-        ccds = getCCDCount()
-        cores = getCoreCount()
-
-        print("CCDs: " + str(ccds))
-        print("Cores: " + str(cores))
+        if codename != False:
+            print("Code Name: " + codename)
+        print("Model: " + model)
+        print("CCDs: {0} | Cores: {1}".format(ccds, cores))
 
         totalA = peakFreq = i = 0
         while i < cores:
@@ -192,7 +231,7 @@ def parse_pm_table():
         print("PPT:   {:4.2f} W / {:4.0f} W ({:3.2f}%)".format(pptU, pptW, (pptU / pptW * 100)))
         print("TDC:   {:4.2f} A / {:4.0f} A ({:3.2f}%)".format(tdcU, tdcA, (tdcU / tdcA * 100)))
         print("EDC:   {:4.2f} A / {:4.0f} A ({:3.2f}%)".format(edcU, edcA, (edcU / edcA * 100)))
-        print("==================================\n")
+        print("============================================\n")
 
         fclkMHz = read_float(pm, 0x118)
         uclkMHz = read_float(pm, 0x128)
@@ -205,14 +244,14 @@ def parse_pm_table():
         vddpV = read_float(pm, 0x1F4)
         vddgV = read_float(pm, 0x1F8)
 
-        print("===========   MEMORY   ===========")
+        print("================   MEMORY   ================")
         print("Coupled Mode: " + coupledMode)
         print("FCLK:         {:.0f} MHz".format(fclkMHz))
         print("UCLK:         {:.0f} MHz".format(uclkMHz))
         print("MCLK:         {:.0f} MHz".format(mclkMHz))
         print("VDDP:         {:.4f} V".format(vddpV))
         print("VDDG:         {:.4f} V".format(vddgV))
-        print("==================================\n")
+        print("============================================")
 
         sleep(1)
 
@@ -226,7 +265,6 @@ def main():
         return
 
     if pm_table_supported():
-        print("PM Table: Supported")
         parse_pm_table()
     else:
         print("PM Table: Unsupported")
