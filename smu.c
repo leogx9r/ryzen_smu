@@ -86,12 +86,15 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
         if (tmp != 0)
             break;
 
+        // Check how long has elapsed in ms in case we expire
         tm2 = ktime_get_ns();
         elapsed = (tm2 - tm1) / 1000000;
 
         if (elapsed >= smu_pm_update_ms)
             break;
 
+        // msleep() is sufficient here as we aren't in an atomic context
+        //  due to locks
         msleep(SMU_POLL_READ_DELAY_MS);
     }
 
@@ -122,6 +125,10 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
     // See: CPUID_Fn80000001_EBX
     pkg_type = cpuid_ebx(0x80000001) >> 28;
 
+    // The following is a direct recreating of what Ryzen Master
+    //  uses to determine each processor model.
+    // In the case where multiple CPUs of the same family releases,
+    //  this should technically allow us to detect all future models.
     if (e_model <= 0xF && pkg_type == 2) {
         if (e_model == 1)
             g_smu.codename = CODENAME_SUMMITRIDGE;
@@ -215,6 +222,7 @@ int smu_init(struct pci_dev* dev) {
 }
 
 void smu_cleanup(void) {
+    // Unmap DRAM Base if required after SMU use
     if (g_smu.pm_table_virt_addr)
         iounmap(g_smu.pm_table_virt_addr);
 }
@@ -226,6 +234,8 @@ enum smu_processor_codename smu_get_codename(void) {
 u32 smu_get_version(struct pci_dev* dev) {
     u32 args[6] = { 1, 0, 0, 0, 0, 0 }, ret;
 
+    // OP 0x02 is consistent with all platforms meaning
+    //  it can be used directly.
     ret = smu_send_command(dev, 0x02, args, 1);
     if (ret != SMU_Return_OK)
         return ret;
@@ -385,12 +395,16 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
         }
     }
 
+    // Ensure the request is read in blocks of 32 bit words, with at least the minimum
+    //  map size used
     if (!dst || g_smu.pm_dram_min_map_size > *len || (*len % sizeof(unsigned int)) != 0)
         return SMU_Return_InsufficientSize;
 
+    // Ensure the user does not go over the mapped threshold
     if (*len > g_smu.pm_dram_max_map_size)
         *len = g_smu.pm_dram_max_map_size;
 
+    // Check if we should tell the SMU to refresh the table with nanosecond precision
     tm = ktime_get_ns();
     if ((tm - g_smu.pm_last_probe_ns) > (1000000 * smu_pm_update_ms)) {
         ret = smu_probe_pm_table(dev);
@@ -400,6 +414,7 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
         g_smu.pm_last_probe_ns = tm;
     }
 
+    // We only map the DRAM base once for use.
     if (g_smu.pm_table_virt_addr == NULL) {
         g_smu.pm_table_virt_addr = ioremap(g_smu.pm_dram_base, g_smu.pm_dram_max_map_size);
 
@@ -408,6 +423,5 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
     }
 
     memcpy(dst, g_smu.pm_table_virt_addr, *len);
-
     return SMU_Return_OK;
 }

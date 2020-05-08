@@ -91,6 +91,8 @@ static ssize_t smu_cmd_show(struct kobject *kobj, struct kobj_attribute *attr, c
 static ssize_t smu_cmd_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buff, size_t count) {
     u32 op;
 
+    // To date, there has never been a command that actually exceeds FFh
+    //  so 32 bits is overkill but still support it.
     switch (count) {
         case sizeof(u32):
             op = *(u32*)buff;
@@ -134,9 +136,11 @@ static ssize_t smn_show(struct kobject *kobj, struct kobj_attribute *attr, char 
 static ssize_t smn_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buff, size_t count) {
     switch (count) {
         case sizeof(u32):
+            // One word written means we read this address at buff[0]
             g_driver.smn_result = smu_read_address(g_driver.device, *(u32*)buff);
             break;
         case (sizeof(u32) * 2):
+            // Two words written means we write the second word to the address of the first word
             smu_write_address(g_driver.device, *(u32*)buff, *(u32*)(buff + sizeof(u32)));
             g_driver.smn_result = 0;
             break;
@@ -223,6 +227,7 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
         return -EINVAL;
     }
 
+    // Check that PM table options are supported before adding it to the attr list
     if (smu_probe_pm_table(g_driver.device) == SMU_Return_OK) {
         g_driver.pm_table = kzalloc(PM_TABLE_MAX_SIZE, GFP_KERNEL);
 
@@ -231,6 +236,7 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
             goto _CONTINUE_SETUP;
         }
 
+        // Perform an initial fill of the data for when the device is queued, saving time
         pr_debug("Probing the PM table for state changes");
         if (smu_read_pm_table(dev, g_driver.pm_table, &g_driver.pm_table_read_size) == SMU_Return_OK) {
             pr_debug("Probe succeeded: read %ld bytes\n", g_driver.pm_table_read_size);
@@ -242,7 +248,7 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
     }
 
 _CONTINUE_SETUP:
-
+    // Allocate the sysfs attr group with the parameters for use
     g_driver.drv_kobj = kobject_create_and_add("ryzen_smu_drv", kernel_kobj);
     if (!g_driver.drv_kobj) {
         pr_err("Unable to create sysfs interface");
@@ -256,6 +262,7 @@ _CONTINUE_SETUP:
 }
 
 static void ryzen_smu_remove(struct pci_dev *dev) {
+    // Free allocated resources as well as the SMU
     if (g_driver.pm_table)
         kfree(g_driver.pm_table);
 
@@ -281,6 +288,8 @@ static struct pci_driver ryzen_smu_driver = {
 };
 
 static int __init ryzen_smu_driver_init(void) {
+    // By default the driver will not be used to communicate with the
+    //  northbridge so we forcefully tell the system to use it
     if (pci_register_driver(&ryzen_smu_driver) < 0) {
         pr_err("Failed to register the PCI driver.");
         return 1;
