@@ -267,7 +267,7 @@ static void ryzen_smu_remove(struct pci_dev *dev) {
         kfree(g_driver.pm_table);
 
     if (g_driver.drv_kobj)
-        kobject_put(g_driver.drv_kobj);
+        kobject_del(g_driver.drv_kobj);
 
     smu_cleanup();
 }
