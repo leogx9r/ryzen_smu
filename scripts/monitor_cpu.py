@@ -1,11 +1,17 @@
 #!/bin/python3
 
 import os
+import sys
 import struct
 from time import sleep
 
-FS_PATH = '/sys/kernel/ryzen_smu_drv/'
+# Hack to import local cpuid.py without installing it
+sys.path.append(os.path.abspath("."))
+import cpuid
 
+_cpuid   = None
+
+FS_PATH  = '/sys/kernel/ryzen_smu_drv/'
 SMN_PATH = FS_PATH + 'smn'
 VER_PATH = FS_PATH + 'version'
 PM_PATH  = FS_PATH + 'pm_table'
@@ -118,8 +124,20 @@ def getCCDCount():
     return ccdCount
 
 def getCoreCount():
-    # TODO: Expand this for 12+ core processors
-    return 8
+    global _cpuid
+    if _cpuid is None:
+        _cpuid = cpuid.CPUID()
+
+    eax, ebx, ecx, edx = _cpuid(0x00000001)
+    logicalCores = (ebx >> 16) & 0xFF
+
+    eax, ebx, ecx, edx = _cpuid(0x8000001E)
+    threadsPerCore = ((ebx >> 8) & 0xF) + 1
+
+    if threadsPerCore == 0:
+        return logicalCores
+
+    return int(logicalCores / threadsPerCore)
 
 def parse_pm_table():
     while True:
@@ -142,7 +160,6 @@ def parse_pm_table():
 
             if peakFreq < freq:
                 peakFreq = freq
-                peakActivity = activity
 
             totalA = totalA + activity
 
