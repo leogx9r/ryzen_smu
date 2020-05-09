@@ -182,9 +182,21 @@ def parse_pm_table():
     cores    = getCoreCount()
     model    = getCpuModel()
 
-    while True:
-        pm = read_pm_table()
+    pm = read_pm_table()
 
+    SoCV  = read_float(pm, 0x0B0)
+    fclkMHz = read_float(pm, 0x118)
+    uclkMHz = read_float(pm, 0x128)
+    mclkMHz = read_float(pm, 0x138)
+    if uclkMHz == mclkMHz:
+        coupledMode = "ON"
+    else:
+        coupledMode = "OFF"
+
+    vddpV = read_float(pm, 0x1F4)
+    vddgV = read_float(pm, 0x1F8)
+
+    while True:
         print("\033c================  CPU INFO  ================")
 
         if codename != False:
@@ -236,18 +248,6 @@ def parse_pm_table():
         print("EDC:   {:4.2f} A / {:4.0f} A ({:3.2f}%)".format(edcU, edcA, (edcU / edcA * 100)))
         print("============================================\n")
 
-        SoCV  = read_float(pm, 0x0B0)
-        fclkMHz = read_float(pm, 0x118)
-        uclkMHz = read_float(pm, 0x128)
-        mclkMHz = read_float(pm, 0x138)
-        if uclkMHz == mclkMHz:
-            coupledMode = "ON"
-        else:
-            coupledMode = "OFF"
-
-        vddpV = read_float(pm, 0x1F4)
-        vddgV = read_float(pm, 0x1F8)
-
         print("================   MEMORY   ================")
         print("Coupled Mode: " + coupledMode)
         print("FCLK:         {:.0f} MHz".format(fclkMHz))
@@ -259,6 +259,8 @@ def parse_pm_table():
         print("============================================")
 
         sleep(1)
+
+        pm = read_pm_table()
 
 def main():
     if is_root() == False:
