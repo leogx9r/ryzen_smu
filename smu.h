@@ -126,6 +126,14 @@ u32 smu_get_version(struct pci_dev* dev);
 enum smu_return_val smu_probe_pm_table(struct pci_dev* dev);
 
 /**
+ * For Matisse and Renoir processors, returns a numeric value indicating the format
+ *  of the PM table.
+ *
+ * Returns an smu_return_val indicating the status of the operation.
+ */
+enum smu_return_val smu_get_pm_table_type(struct pci_dev* dev, u32* type);
+
+/**
  * Reads the PM table for the current CPU, if supported, into the destination buffer.
  * 
  * Returns an smu_return_val indicating the status of the operation.

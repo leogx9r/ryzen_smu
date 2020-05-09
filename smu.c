@@ -17,12 +17,14 @@ static struct {
     u32                            addr_mb_rsp;
     u32                            addr_mb_args;
 
-    u32                            pm_dram_base;
-    u32                            pm_dram_max_map_size;
-    u32                            pm_dram_min_map_size;
+    u64                            pm_dram_base;
+    u32                            pm_dram_base_alt;
+    u32                            pm_dram_map_size;
+    u32                            pm_dram_map_size_alt;
     u64                            pm_last_probe_ns;
 
     u8*                            pm_table_virt_addr;
+    u8*                            pm_table_virt_addr_alt;
 } g_smu = {
     .codename                    = CODENAME_UNDEFINED,
 
@@ -31,11 +33,13 @@ static struct {
     .addr_mb_args                = 0,
 
     .pm_dram_base                = 0,
-    .pm_dram_max_map_size        = 0,
-    .pm_dram_min_map_size        = 0,
+    .pm_dram_base_alt            = 0,
+    .pm_dram_map_size            = 0,
+    .pm_dram_map_size_alt        = 0,
     .pm_last_probe_ns            = 0,
 
     .pm_table_virt_addr          = NULL,
+    .pm_table_virt_addr_alt      = NULL,
 };
 
 static DEFINE_MUTEX(amd_pci_mutex);
@@ -215,6 +219,9 @@ void smu_cleanup(void) {
     // Unmap DRAM Base if required after SMU use
     if (g_smu.pm_table_virt_addr)
         iounmap(g_smu.pm_table_virt_addr);
+
+    if (g_smu.pm_table_virt_addr_alt)
+        iounmap(g_smu.pm_table_virt_addr_alt);
 }
 
 enum smu_processor_codename smu_get_codename(void) {
@@ -316,18 +323,7 @@ enum smu_return_val smu_probe_pm_table(struct pci_dev* dev) {
 
     /**
      * Probes (updates) the PM Table.
-     * Physically mapped at the DRAM Base address.
-     * 
-     * Models Characteristics:
-     * -  Matisse:
-     *      Maximum Segment Size: 0x7E4
-     *      Alternate Read Sizes: 0x514, 0x518, 0x7E0
-     * -  Renoir:
-     *      Maximum Segment Size: 0x88C
-     *      Alternate Read Sizes: 0x794, 0x884
-     * -  Picasso / RavenRidge 2:
-     *      Maximum Segment Size (1st): 0x608
-     *      Maximum Segment Size (2nd): 0xA4
+     * Physically mapped at the DRAM Base address(es).
      */
 
     switch (g_smu.codename) {
@@ -350,13 +346,35 @@ enum smu_return_val smu_probe_pm_table(struct pci_dev* dev) {
     return smu_send_command(dev, fn, args, 1);
 }
 
+enum smu_return_val smu_get_pm_table_type(struct pci_dev* dev, u32* type) {
+    u32 fn;
+
+    /**
+     * For Matisse & Renoir, there are different PM tables for each chip.
+     * Presumably this is based on core count.
+     */
+    switch (g_smu.codename) {
+        case CODENAME_MATISSE:
+            fn = 0x08;
+            break;
+        case CODENAME_RENOIR:
+            fn = 0x06;
+            break;
+        default:
+            return SMU_Return_Unsupported;
+    }
+
+    *type = 0;
+    return smu_send_command(dev, fn, type, 1);
+}
+
 enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, size_t* len) {
-    u32 ret;
+    u32 ret, type, size;
     u64 tm;
 
     // The DRAM base does not change across boots meaning it only needs to be
     //  fetched once.
-    if (g_smu.pm_dram_base == 0 || g_smu.pm_dram_max_map_size == 0) {
+    if (g_smu.pm_dram_base == 0 || g_smu.pm_dram_map_size == 0) {
         // For Picasso/RavenRidge, we ignore the second segment in the upper
         //  32 bits which is a block that's 0xA4 bytes long.
         g_smu.pm_dram_base = smu_get_dram_base_address(dev);
@@ -366,33 +384,82 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
             return g_smu.pm_dram_base;
         }
 
-        // Each model has different maximum sizes.
+        // Each model has different types and sizes.
         switch (g_smu.codename) {
             case CODENAME_MATISSE:
-                g_smu.pm_dram_max_map_size = 0x7E4;
-                g_smu.pm_dram_min_map_size = 0x514;
+                ret = smu_get_pm_table_type(dev, &type);
+
+                if (ret != SMU_Return_OK) {
+                    pr_err("Failed to get PM Table type, returned %d\n", ret);
+                    return ret;
+                }
+
+                switch (type) {
+                    case 0x240902:
+                        g_smu.pm_dram_map_size = 0x514;
+                        break;
+                    case 0x240903:
+                        g_smu.pm_dram_map_size = 0x518;
+                        break;
+                    case 0x240802:
+                        g_smu.pm_dram_map_size = 0x7E0;
+                        break;
+                    case 0x240803:
+                        g_smu.pm_dram_map_size = 0x7E4;
+                        break;
+                    default:
+                        pr_err("Unknown PM Table Type: 0x%08X", type);
+                        return SMU_Return_Unsupported;
+                }
                 break;
             case CODENAME_RENOIR:
-                g_smu.pm_dram_max_map_size = 0x88C;
-                g_smu.pm_dram_min_map_size = 0x794;
+                ret = smu_get_pm_table_type(dev, &type);
+
+                if (ret != SMU_Return_OK) {
+                    pr_err("Failed to get PM Table type, returned %d\n", ret);
+                    return ret;
+                }
+
+                switch (type) {
+                    case 0x370000:
+                        g_smu.pm_dram_map_size = 0x794;
+                        break;
+                    case 0x370001:
+                        g_smu.pm_dram_map_size = 0x884;
+                        break;
+                    case 0x370002:
+                        g_smu.pm_dram_map_size = 0x88C;
+                        break;
+                    default:
+                        pr_err("Unknown PM Table Type: 0x%08X", type);
+                        return SMU_Return_Unsupported;
+                }
                 break;
             case CODENAME_PICASSO:
             case CODENAME_RAVENRIDGE2:
-                g_smu.pm_dram_min_map_size = g_smu.pm_dram_max_map_size = 0x608;
+                g_smu.pm_dram_map_size_alt = 0xA4;
+                g_smu.pm_dram_map_size = 0x608 + g_smu.pm_dram_map_size_alt;
+
+                // Split DRAM base into high/low values.
+                g_smu.pm_dram_base_alt = g_smu.pm_dram_base >> 32;
+                g_smu.pm_dram_base &= 0xFFFFFFFF;
                 break;
             default:
                 return SMU_Return_Unsupported;
         }
     }
 
-    // Ensure the request is read in blocks of 32 bit words, with at least the minimum
-    //  map size used
-    if (!dst || g_smu.pm_dram_min_map_size > *len || (*len % sizeof(unsigned int)) != 0)
-        return SMU_Return_InsufficientSize;
+    // Validate output buffer size
+    // N.B. In the case of Picasso/RavenRidge 2, we include the secondary PM Table size as well
+    if (*len < g_smu.pm_dram_map_size) {
+        pr_warn("Insufficient buffer size for PM table read: %lu < %d", *len, g_smu.pm_dram_map_size);
 
-    // Ensure the user does not go over the mapped threshold
-    if (*len > g_smu.pm_dram_max_map_size)
-        *len = g_smu.pm_dram_max_map_size;
+        *len = g_smu.pm_dram_map_size;
+        return SMU_Return_InsufficientSize;
+    }
+
+    // Clamp output size
+    *len = g_smu.pm_dram_map_size;
 
     // Check if we should tell the SMU to refresh the table with nanosecond precision
     tm = ktime_get_ns();
@@ -404,14 +471,34 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
         g_smu.pm_last_probe_ns = tm;
     }
 
-    // We only map the DRAM base once for use.
-    if (g_smu.pm_table_virt_addr == NULL) {
-        g_smu.pm_table_virt_addr = ioremap(g_smu.pm_dram_base, g_smu.pm_dram_max_map_size);
+    // Primary PM Table size
+    size = g_smu.pm_dram_map_size - g_smu.pm_dram_map_size_alt;
 
-        if (g_smu.pm_table_virt_addr == NULL)
+    // We only map the DRAM base(s) once for use.
+    if (g_smu.pm_table_virt_addr == NULL) {
+        g_smu.pm_table_virt_addr = ioremap(g_smu.pm_dram_base, size);
+
+        if (g_smu.pm_table_virt_addr == NULL) {
+            pr_err("Failed to map DRAM base: %llX (0x%X B)", g_smu.pm_dram_base, size);
             return SMU_Return_MappedError;
+        }
+
+        // In Picasso/RavenRidge 2, we map the secondary (high) address as well.
+        if (g_smu.pm_dram_map_size_alt) {
+            g_smu.pm_table_virt_addr_alt = ioremap(g_smu.pm_dram_base_alt, g_smu.pm_dram_map_size_alt);
+
+            if (g_smu.pm_table_virt_addr_alt == NULL) {
+                pr_err("Failed to map DRAM alt base: %X (0x%X B)", g_smu.pm_dram_base_alt, g_smu.pm_dram_map_size_alt);
+                return SMU_Return_MappedError;
+            }
+        }
     }
 
-    memcpy(dst, g_smu.pm_table_virt_addr, *len);
+    memcpy(dst, g_smu.pm_table_virt_addr, size);
+
+    // Append secondary table if required.
+    if (g_smu.pm_dram_map_size_alt)
+        memcpy(dst + size, g_smu.pm_table_virt_addr_alt, g_smu.pm_dram_map_size_alt);
+
     return SMU_Return_OK;
 }

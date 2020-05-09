@@ -204,6 +204,8 @@ static int ryzen_smu_get_version(void) {
 }
 
 static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) {
+    enum smu_return_val ret;
+
     g_driver.device = dev;
 
     /* Clamp values. */
@@ -228,23 +230,27 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
     }
 
     // Check that PM table options are supported before adding it to the attr list
-    if (smu_probe_pm_table(g_driver.device) == SMU_Return_OK) {
+    if (ret = smu_probe_pm_table(g_driver.device), ret == SMU_Return_OK) {
         g_driver.pm_table = kzalloc(PM_TABLE_MAX_SIZE, GFP_KERNEL);
 
         if (g_driver.pm_table == NULL) {
-            pr_err("Unable to allocate kernel buffer for PM table mapping");
+            pr_err("Unable to allocate kernel buffer for PM table mapping -- disabling PM table feature");
             goto _CONTINUE_SETUP;
         }
 
         // Perform an initial fill of the data for when the device is queued, saving time
         pr_debug("Probing the PM table for state changes");
-        if (smu_read_pm_table(dev, g_driver.pm_table, &g_driver.pm_table_read_size) == SMU_Return_OK) {
-            pr_debug("Probe succeeded: read %ld bytes\n", g_driver.pm_table_read_size);
+        if (ret = smu_read_pm_table(dev, g_driver.pm_table, &g_driver.pm_table_read_size),
+            ret == SMU_Return_OK) {
+            pr_debug("Probe succeeded: read %ld bytes", g_driver.pm_table_read_size);
             drv_attrs[5] = &dev_attr_pm_table_size.attr;
             drv_attrs[6] = &dev_attr_pm_table.attr;
         }
         else
-            pr_err("Failed to probe the PM table. Disabling feature.");
+            pr_err("Failed to probe the PM table -- disabling feature (%d)", ret);
+    }
+    else {
+        pr_debug("Notice: PM tables are not supported for the current platform (%d)", ret);
     }
 
 _CONTINUE_SETUP:
