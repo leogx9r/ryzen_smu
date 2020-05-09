@@ -375,12 +375,10 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
     // The DRAM base does not change across boots meaning it only needs to be
     //  fetched once.
     if (g_smu.pm_dram_base == 0 || g_smu.pm_dram_map_size == 0) {
-        // For Picasso/RavenRidge, we ignore the second segment in the upper
-        //  32 bits which is a block that's 0xA4 bytes long.
         g_smu.pm_dram_base = smu_get_dram_base_address(dev);
 
         if (g_smu.pm_dram_base < 0xFF && g_smu.pm_dram_base >= 0) {
-            pr_err("Unable to receive the DRAM base address");
+            pr_err("Unable to receive the DRAM base address (%d)", (u8)g_smu.pm_dram_base);
             return g_smu.pm_dram_base;
         }
 
@@ -410,7 +408,7 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
                         break;
                     default:
                     UNKNOWN_PM_TABLE_TYPE:
-                        pr_err("Unknown PM Table Type: 0x%08X", type);
+                        pr_err("Unknown PM table type: 0x%08X", type);
                         return SMU_Return_Unsupported;
                 }
                 break;
