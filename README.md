@@ -202,11 +202,11 @@ On supported platforms, this file contains the PM table for the processor, as up
 
 The driver supports the following module parameters:
 
-#### `smu_timeout_ms`
+#### `smu_timeout_attempts`
 
-When executing an SMU command, either by reading `pm_table` or manually, via `smu_args` and `smu_cmd`, the driver will wait for at most, this many milliseconds before considering the command to have timed out.
+When executing an SMU command, either by reading `pm_table` or manually, via `smu_args` and `smu_cmd`, the driver will retry this many times before considering the command to have timed out.
 
-For example, on slower or busy systems, the SMU may be tied up resulting in commands taking longer to execute than normal. Allowed range is from `1` to `5000` milliseconds, defaulting to `1000`.
+For example, on slower or busy systems, the SMU may be tied up resulting in commands taking longer to execute than normal. Allowed range is from `500` to `32768` milliseconds, defaulting to `8192`.
 
 #### `smu_pm_update_ms`
 

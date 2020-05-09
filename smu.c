@@ -45,8 +45,8 @@ u32 smu_read_address(struct pci_dev* dev, u32 address) {
     u32 ret;
 
     mutex_lock(&amd_pci_mutex);
-    pci_write_config_dword(dev, SMU_PCI_REQ_REG, address);
-    pci_read_config_dword(dev, SMU_PCI_RSP_REG, &ret);
+    pci_write_config_dword(dev, SMU_PCI_ADDR_REG, address);
+    pci_read_config_dword(dev, SMU_PCI_DATA_REG, &ret);
     mutex_unlock(&amd_pci_mutex);
 
     return ret;
@@ -54,57 +54,47 @@ u32 smu_read_address(struct pci_dev* dev, u32 address) {
 
 void smu_write_address(struct pci_dev* dev, u32 address, u32 value) {
     mutex_lock(&amd_pci_mutex);
-    pci_write_config_dword(dev, SMU_PCI_REQ_REG, address);
-    pci_write_config_dword(dev, SMU_PCI_RSP_REG, value);
+    pci_write_config_dword(dev, SMU_PCI_ADDR_REG, address);
+    pci_write_config_dword(dev, SMU_PCI_DATA_REG, value);
     mutex_unlock(&amd_pci_mutex);
 }
 
 enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32 n_args) {
-    u64 tm1, tm2, elapsed;
-    u32 tmp, i;
+    u32 retries, tmp, i;
 
     mutex_lock(&amd_smu_mutex);
-    
-    // Step 1: Clear RSP register
+
+    // Step 1: Wait until the RSP register is non-zero.
+    tmp = 0; retries = smu_timeout_attempts;
+    while (tmp == 0 && retries--)
+        tmp = smu_read_address(dev, g_smu.addr_mb_rsp);
+
+    // Step 2: Write zero (0) to the RSP register
     smu_write_address(dev, g_smu.addr_mb_rsp, 0);
 
-    // Step 2: Write arguments
+    // Step 3: Write the argument(s) into the argument register(s)
     for (i = 0; i < 6; i++) {
         tmp = i >= n_args ? 0 : args[i];
         smu_write_address(dev, g_smu.addr_mb_args + (i * 4), tmp);
     }
 
-    // Step 3: Write command op
+    // Step 4: Write the message Id into the Message ID register
     smu_write_address(dev, g_smu.addr_mb_cmd, op);
     
-    // Step 4: Poll RSP till value has changed
-    tmp = elapsed = 0;
-    tm1 = ktime_get_ns();
-    while (1) {
+    // Step 5: Wait until the Response register is non-zero.
+    tmp = 0; retries = smu_timeout_attempts;
+    while(tmp == 0 && retries--)
         tmp = smu_read_address(dev, g_smu.addr_mb_rsp);
 
-        if (tmp != 0)
-            break;
-
-        // Check how long has elapsed in ms in case we expire
-        tm2 = ktime_get_ns();
-        elapsed = (tm2 - tm1) / 1000000;
-
-        if (elapsed >= smu_pm_update_ms)
-            break;
-
-        // msleep() is sufficient here as we aren't in an atomic context
-        //  due to locks
-        msleep(SMU_POLL_READ_DELAY_MS);
-    }
-
-    // Step 5: Validate request result
-    if (tmp != SMU_Return_OK && elapsed >= smu_pm_update_ms) {
+    // Step 6: If the Response register contains OK, then SMU has finished processing
+    //  the message.
+    if (tmp != SMU_Return_OK && !retries) {
         mutex_unlock(&amd_smu_mutex);
         return tmp == 0 ? SMU_Return_CommandTimeout : tmp;
     }
 
-    // Step 6: Read back arguments
+    // Step 7: If a return argument is expected, the Argument register may be read
+    //  at this time.
     for (i = 0; i < n_args; i++)
         args[i] = smu_read_address(dev, g_smu.addr_mb_args + (i * 4));
 

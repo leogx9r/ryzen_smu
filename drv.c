@@ -58,7 +58,7 @@ static struct ryzen_smu_data {
 
 /* SMU Command Parameters. */
 uint smu_pm_update_ms = 1000;
-uint smu_timeout_ms = 1000;
+uint smu_timeout_attempts = 8192;
 
 static ssize_t attr_store_null(struct kobject *kobj, struct kobj_attribute *attr, const char *buff, size_t count) {
     return 0;
@@ -212,10 +212,10 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
     if (smu_pm_update_ms < PM_TABLE_MIN_UPDATE_TIME_MS)
         smu_pm_update_ms = PM_TABLE_MIN_UPDATE_TIME_MS;
     
-    if (smu_timeout_ms > SMU_TIMEOUT_MAX_MS)
-        smu_timeout_ms = SMU_TIMEOUT_MAX_MS;
-    if (smu_timeout_ms < SMU_TIMEOUT_MIN_MS)
-        smu_timeout_ms = SMU_TIMEOUT_MIN_MS;
+    if (smu_timeout_attempts > SMU_RETRIES_MAX)
+        smu_timeout_attempts = SMU_RETRIES_MAX;
+    if (smu_timeout_attempts < SMU_RETRIES_MAX)
+        smu_timeout_attempts = SMU_RETRIES_MAX;
 
     if (smu_init(g_driver.device) != 0) {
         pr_err("Failed to initialize the SMU for use");
@@ -308,5 +308,5 @@ module_exit(ryzen_smu_driver_exit);
 module_param(smu_pm_update_ms, uint, 0644);
 MODULE_PARM_DESC(smu_pm_update_ms, "Controls how often in milliseconds, the SMU is commanded to update the PM table. Default: 1000ms");
 
-module_param(smu_timeout_ms, uint, 0644);
-MODULE_PARM_DESC(smu_timeout_ms, "Waits at most, this many milliseconds till an executing SMU command is determined to have timed out. Default: 1000ms");
+module_param(smu_timeout_attempts, uint, 0644);
+MODULE_PARM_DESC(smu_timeout_attempts, "Waits at most, this many milliseconds till an executing SMU command is determined to have timed out. Default: 1000ms");

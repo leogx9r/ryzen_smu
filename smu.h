@@ -25,16 +25,16 @@
 #define PM_TABLE_MAX_UPDATE_TIME_MS                   60000
 #define PM_TABLE_MIN_UPDATE_TIME_MS                   50
 
-/* Specifies the range on how long an SMU command can be waited on till it fails. */
-#define SMU_TIMEOUT_MAX_MS                            5000
-#define SMU_TIMEOUT_MIN_MS                            1
+/* Specifies the amount of attempts an of polling the SMU for a command response till it fails. */
+#define SMU_RETRIES_MAX                               32768
+#define SMU_RETRIES_MIN                               500
 
 /* How often to poll the SMU response register for a result in milliseconds. */
 #define SMU_POLL_READ_DELAY_MS                        1
 
 /* PCI Query Registers. [0x60,0x64] & [0xB4, 0xB8] also work. */
-#define SMU_PCI_REQ_REG                               0xC4
-#define SMU_PCI_RSP_REG                               0xC8
+#define SMU_PCI_ADDR_REG                              0xC4
+#define SMU_PCI_DATA_REG                              0xC8
 
 /**
  * Return values that can be sent from the SMU in response to a command.
@@ -79,7 +79,7 @@ enum smu_processor_codename {
 
 /* Parameters for SMU execution. */
 extern uint smu_pm_update_ms;
-extern uint smu_timeout_ms;
+extern uint smu_timeout_attempts;
 
 /**
  * Initializes for SMU use. MUST be called before using any function.
