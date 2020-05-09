@@ -214,8 +214,8 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
     
     if (smu_timeout_attempts > SMU_RETRIES_MAX)
         smu_timeout_attempts = SMU_RETRIES_MAX;
-    if (smu_timeout_attempts < SMU_RETRIES_MAX)
-        smu_timeout_attempts = SMU_RETRIES_MAX;
+    if (smu_timeout_attempts < SMU_RETRIES_MIN)
+        smu_timeout_attempts = SMU_RETRIES_MIN;
 
     if (smu_init(g_driver.device) != 0) {
         pr_err("Failed to initialize the SMU for use");
