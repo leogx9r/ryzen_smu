@@ -385,15 +385,16 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
         }
 
         // Each model has different types and sizes.
+        if (g_smu.codename == CODENAME_MATISSE || g_smu.codename == CODENAME_RENOIR) {
+            ret = smu_get_pm_table_type(dev, &type);
+
+            if (ret != SMU_Return_OK) {
+                pr_err("Failed to get PM Table type, returned %d\n", ret);
+                return ret;
+            }
+        }
         switch (g_smu.codename) {
             case CODENAME_MATISSE:
-                ret = smu_get_pm_table_type(dev, &type);
-
-                if (ret != SMU_Return_OK) {
-                    pr_err("Failed to get PM Table type, returned %d\n", ret);
-                    return ret;
-                }
-
                 switch (type) {
                     case 0x240902:
                         g_smu.pm_dram_map_size = 0x514;
@@ -408,18 +409,12 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
                         g_smu.pm_dram_map_size = 0x7E4;
                         break;
                     default:
+                    UNKNOWN_PM_TABLE_TYPE:
                         pr_err("Unknown PM Table Type: 0x%08X", type);
                         return SMU_Return_Unsupported;
                 }
                 break;
             case CODENAME_RENOIR:
-                ret = smu_get_pm_table_type(dev, &type);
-
-                if (ret != SMU_Return_OK) {
-                    pr_err("Failed to get PM Table type, returned %d\n", ret);
-                    return ret;
-                }
-
                 switch (type) {
                     case 0x370000:
                         g_smu.pm_dram_map_size = 0x794;
@@ -431,8 +426,7 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
                         g_smu.pm_dram_map_size = 0x88C;
                         break;
                     default:
-                        pr_err("Unknown PM Table Type: 0x%08X", type);
-                        return SMU_Return_Unsupported;
+                        goto UNKNOWN_PM_TABLE_TYPE;
                 }
                 break;
             case CODENAME_PICASSO:
