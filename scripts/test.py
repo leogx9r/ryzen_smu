@@ -22,6 +22,14 @@ def driver_loaded():
 def pm_table_supported():
     return os.path.isfile(PM_PATH)
 
+def read_file32(file):
+    with open(file, "rb") as fp:
+        result = fp.read(4)
+        result = struct.unpack("<I", result)[0]
+        fp.close()
+
+    return result
+
 def write_file32(file, value):
     with open(file, "wb") as fp:
         result = fp.write(struct.pack("<I", value))
@@ -35,6 +43,21 @@ def write_file64(file, value1, value2):
         fp.close()
 
     return result == 8
+
+def read_file192(file):
+    with open(file, "rb") as fp:
+        result = fp.read(24)
+        result = struct.unpack("<IIIIII", result)
+        fp.close()
+
+    return result
+
+def write_file192(file, v1, v2, v3, v4, v5, v6):
+    with open(file, "wb") as fp:
+        result = fp.write(struct.pack("<IIIIII", v1, v2, v3, v4, v5, v6))
+        fp.close()
+
+    return result == 24
 
 def write_file192(file, v1, v2, v3, v4, v5, v6):
     with open(file, "wb") as fp:
@@ -59,7 +82,7 @@ def read_smn_addr(addr):
         print("Failed to read SMN address: {:08X}".format(addr))
         return 0
     
-    value = read_file_str(SMN_PATH)
+    value = read_file32(SMN_PATH)
     
     if value == False:
         print("Failed to read SMN address: {:08X}".format(addr))
@@ -78,12 +101,12 @@ def smu_command(op, arg1, arg2 = 0, arg3 = 0, arg4 = 0, arg5 = 0, arg6 = 0):
     check = True
 
     # Check if SMU is currently executing a command
-    value = read_file_str(SMU_CMD, 3)
+    value = read_file32(SMU_CMD)
     if value != False:
         while int(value) == 0:
             print("Wating for existing SMU command to complete ...")
             sleep(1)
-            value = read_file_str(SMU_CMD)
+            value = read_file32(SMU_CMD)
     else:
         print("Failed to get SMU status response")
         return False
@@ -98,34 +121,27 @@ def smu_command(op, arg1, arg2 = 0, arg3 = 0, arg4 = 0, arg5 = 0, arg6 = 0):
         print("Failed to execute the SMU command: {:08X}".format(op))
     
     # Check for the result:
-    value = read_file_str(SMU_CMD, 3)
+    value = read_file32(SMU_CMD)
     if value != False:
         while value == "0\n":
             print("Wating for existing SMU command to complete ...")
             sleep(1)
-            value = read_file_str(SMU_CMD, 3)
+            value = read_file32(SMU_CMD)
     else:
         print("SMU OP readback returned false")
         return False
 
-    if int(value) != 1:
+    if value != 1:
         print("SMU Command Result Failed: " + value)
         return False
 
-    args = read_file_str(SMU_ARGS, 49)
+    args = read_file192(SMU_ARGS)
 
     if args == False:
         print("Failed to read SMU response arguments")
         return False
 
-    arg1 = int(args[0:8], base=16)
-    arg2 = int(args[8:16], base=16)
-    arg3 = int(args[16:24], base=16)
-    arg4 = int(args[24:32], base=16)
-    arg5 = int(args[32:40], base=16)
-    arg6 = int(args[40:48], base=16)
-
-    return [arg1, arg2, arg3, arg4, arg5, arg6]
+    return args
 
 def test_get_version():
     args = smu_command(0x02, 1)
@@ -159,11 +175,10 @@ def test_get_codename():
         "Raven Ridge 2",
         "Summit Ridge",
         "Pinnacle Ridge"
-
     ]
-    args = read_file_str(CN_PATH, 2)
+    args = read_file_str(CN_PATH, 3)
 
-    if args != False and int(args) != 0:
+    if args != False and int(args) != 0 and int(args) < 11:
         print("Processor Code Name: " + codenames[int(args)])
         return True
     
@@ -193,7 +208,7 @@ def main():
     val = read_smn_addr(0x50200)
 
     if val != False:
-        print("SMN Offset[0x50200]: 0x{:08x}\n".format(int(val, base=16)))
+        print("SMN Offset[0x50200]: 0x{:08x}\n".format(val))
         print("Everything seems to be working properly!")
     else:
         print("Failed to read SMN address. Is your system supported?")

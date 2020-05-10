@@ -128,6 +128,8 @@ The following are several lists of SMU to AGESA versions:
 | 46.37         | 1.0.0.3 A     |
 | 43.18         | 1.0.0.2 A     |
 
+Note: This file returns a string encoded version represented by the "SMU Version" above.
+
 #### `/sys/kernel/ryzen_smu_drv/codename`
 
 Returns a numeric index containing the running processor's codename based on the following enumeration:
@@ -146,11 +148,13 @@ Returns a numeric index containing the running processor's codename based on the
 | 09h | 9       | Summit Ridge   |
 | 0Ah | 10      | Pinnacle Ridge |
 
+Note: This file returns 2 characters of the decimal encoded index.
+
 #### `/sys/kernel/ryzen_smu_drv/smu_cmd`
 
 This file allows the user to initiate an SMU request. It accepts either an 8-bit or 32-bit command ID that is platform-dependent.
 
-When this file is read, it produces the result on the status of the operation, in hex:
+When this file is read, it produces the result on the status of the operation, as a 32 bit little-endian encoded value:
 
 | Hex | Decimal | Explanation                   |
 |:---:|:-------:|:-----------------------------:|
@@ -173,9 +177,7 @@ When read from, it lists either:
 - The last values that were written to it before an SMU request was initiated
 - The responses from the SMU after a request was completed
 
-Values read are output as a hexadecimal string consisting of 24 bytes (48 hex string encoded) representing arguments 1-6.
-
-Values written to this file must be in binary (little-endian) format and written ordered in the same way, 1-6.
+Note: All values sent to and read from this file must be in 6x 32-bit words encoded in little-endian order, arguments numbered from 1 to 6.
 
 #### `/sys/kernel/ryzen_smu_drv/smn`
 
@@ -188,11 +190,13 @@ The amount of bytes written indicates the operation performed:
 | 32           | Read      | Reads 32 bit address and returns the result                                  |
 | 64           | Write     | Writes the second 32-bit value to the address specified by the first 32 bits |
 
-All values sent to the device must be in little-endian binary format while read values are output as hexadecimal.
+Note: All values sent to and read from the device must are in little-endian binary format.
 
 #### `/sys/kernel/ryzen_smu_drv/pm_table_size`
 
 On supported platforms, this lists the maximum size of the `/sys/kernel/ryzen_smu_drv/pm_table` file, in bytes.
+
+Note: File is a 64 bit word encoded in little-endian binary order.
 
 #### `/sys/kernel/ryzen_smu_drv/pm_table`
 

@@ -26,6 +26,14 @@ def driver_loaded():
 def pm_table_supported():
     return os.path.isfile(PM_PATH)
 
+def read_file32(file):
+    with open(file, "rb") as fp:
+        result = fp.read(4)
+        result = struct.unpack("<I", result)[0]
+        fp.close()
+
+    return result
+
 def write_file32(file, value):
     with open(file, "wb") as fp:
         result = fp.write(struct.pack("<I", value))
@@ -63,13 +71,13 @@ def read_smn_addr(addr):
         print("Failed to read SMN address: {:08X}".format(addr))
         return 0
     
-    value = read_file_str(SMN_PATH)
+    value = read_file32(SMN_PATH)
     
     if value == False:
         print("Failed to read SMN address: {:08X}".format(addr))
         return 0
     
-    return int(value, base=16)
+    return value
 
 def read_pm_table():
     with open("/sys/kernel/ryzen_smu_drv/pm_table", "rb") as file:

@@ -69,7 +69,7 @@ static ssize_t version_show(struct kobject *kobj, struct kobj_attribute *attr, c
 }
 
 static ssize_t codename_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
-    return sprintf(buff, "%d\n", smu_get_codename());
+    return sprintf(buff, "%02d\n", smu_get_codename());
 }
 
 static ssize_t pm_table_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
@@ -81,11 +81,17 @@ static ssize_t pm_table_show(struct kobject *kobj, struct kobj_attribute *attr, 
 }
 
 static ssize_t pm_table_size_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
-    return sprintf(buff, "%ld\n", g_driver.pm_table_read_size);
+    ssize_t sz = sizeof(g_driver.pm_table_read_size);
+
+    memcpy(buff, &g_driver.pm_table_read_size, sz);
+    return sz;
 }
 
 static ssize_t smu_cmd_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
-    return sprintf(buff, "%02x\n", g_driver.smu_rsp);
+    ssize_t sz = sizeof(g_driver.smu_rsp);
+
+    memcpy(buff, &g_driver.smu_rsp, sz);
+    return sz;
 }
 
 static ssize_t smu_cmd_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buff, size_t count) {
@@ -109,28 +115,25 @@ static ssize_t smu_cmd_store(struct kobject *kobj, struct kobj_attribute *attr, 
 }
 
 static ssize_t smu_args_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
-    return sprintf(buff, "%08x%08x%08x%08x%08x%08x\n",
-        g_driver.smu_args[0], g_driver.smu_args[1], g_driver.smu_args[2],
-        g_driver.smu_args[3], g_driver.smu_args[4], g_driver.smu_args[5]);
+    ssize_t sz = sizeof(g_driver.smu_args);
+
+    memcpy(buff, &g_driver.smu_args, sz);
+    return sz;
 }
 
 static ssize_t smu_args_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buff, size_t count) {
     if (count != sizeof(u32) * 6)
         return 0;
 
-    #define BUFF_STORE_WORD(n)  g_driver.smu_args[n] = *(u32*)(buff + (n * sizeof(u32)));
-    BUFF_STORE_WORD(0);
-    BUFF_STORE_WORD(1);
-    BUFF_STORE_WORD(2);
-    BUFF_STORE_WORD(3);
-    BUFF_STORE_WORD(4);
-    BUFF_STORE_WORD(5);
-
+    memcpy(g_driver.smu_args, buff, count);
     return count;
 }
 
 static ssize_t smn_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
-    return sprintf(buff, "%08x\n", g_driver.smn_result);
+    ssize_t sz = sizeof(g_driver.smn_result);
+
+    memcpy(buff, &g_driver.smn_result, sz);
+    return sz;
 }
 
 static ssize_t smn_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buff, size_t count) {
