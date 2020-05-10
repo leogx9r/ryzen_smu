@@ -192,7 +192,6 @@ def parse_pm_table():
 
     pm = read_pm_table()
 
-    SoCV  = read_float(pm, 0x0B0)
     fclkMHz = read_float(pm, 0x118)
     uclkMHz = read_float(pm, 0x128)
     mclkMHz = read_float(pm, 0x138)
@@ -200,9 +199,6 @@ def parse_pm_table():
         coupledMode = "ON"
     else:
         coupledMode = "OFF"
-
-    vddpV = read_float(pm, 0x1F4)
-    vddgV = read_float(pm, 0x1F8)
 
     while True:
         print("\033c================  CPU INFO  ================")
@@ -255,6 +251,10 @@ def parse_pm_table():
         print("TDC:   {:4.2f} A / {:4.0f} A ({:3.2f}%)".format(tdcU, tdcA, (tdcU / tdcA * 100)))
         print("EDC:   {:4.2f} A / {:4.0f} A ({:3.2f}%)".format(edcU, edcA, (edcU / edcA * 100)))
         print("============================================\n")
+
+        SoCV  = read_float(pm, 0x0B0)
+        vddpV = read_float(pm, 0x1F4)
+        vddgV = read_float(pm, 0x1F8)
 
         print("================   MEMORY   ================")
         print("Coupled Mode: " + coupledMode)
