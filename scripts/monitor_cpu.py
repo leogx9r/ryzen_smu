@@ -240,13 +240,16 @@ def parse_pm_table():
         CorP  = read_float(pm, 0x060)
         SoCP  = read_float(pm, 0x064)
 
+        SoCV_SVI2 = read_float(pm, 0xB4)
+        SoCC_SVI2 = SoCP / SoCV_SVI2
+
         if edcU < tdcU:
             edcU = tdcU
 
         print("TjMax: {:4.2f} °C".format(tjMax))
         print("Temp:  {:4.2f} °C".format(tempC))
         print("Core:  {:4.2f} W".format(CorP))
-        print("SoC:   {:4.2f} W".format(SoCP))
+        print("SoC:   {:4.2f} W / {:4.2f} A / {:4.2f} V".format(SoCP, SoCC_SVI2, SoCV_SVI2))
         print("PPT:   {:4.2f} W / {:4.0f} W ({:3.2f}%)".format(pptU, pptW, (pptU / pptW * 100)))
         print("TDC:   {:4.2f} A / {:4.0f} A ({:3.2f}%)".format(tdcU, tdcA, (tdcU / tdcA * 100)))
         print("EDC:   {:4.2f} A / {:4.0f} A ({:3.2f}%)".format(edcU, edcA, (edcU / edcA * 100)))
@@ -261,9 +264,9 @@ def parse_pm_table():
         print("FCLK:         {:.0f} MHz".format(fclkMHz))
         print("UCLK:         {:.0f} MHz".format(uclkMHz))
         print("MCLK:         {:.0f} MHz".format(mclkMHz))
-        print("SoC:          {:.4f} V".format(SoCV))
-        print("VDDP:         {:.4f} V".format(vddpV))
-        print("VDDG:         {:.4f} V".format(vddgV))
+        print("VDDCR_SoC:    {:.4f} V".format(SoCV))
+        print("cLDO_VDDP:    {:.4f} V".format(vddpV))
+        print("cLDO_VDDG:    {:.4f} V".format(vddgV))
         print("============================================")
 
         sleep(1)
