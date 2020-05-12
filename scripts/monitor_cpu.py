@@ -184,6 +184,20 @@ def getCpuModel():
 
     return model.rstrip(' ')
 
+def getCoreVoltage(pm, cores):
+    totalV = i = 0
+    peakV = read_float(pm, 0x02C)
+
+    while i < 8:
+        if read_float(pm, 0x2EC + (i * 4)) != 0.0:
+            usage = read_float(pm, 0x36C + (4 * i)) / 100.0
+            totalV = totalV + ((1.0 - usage) * peakV) + (0.2 * usage)
+        i = i + 1
+
+    avgV = totalV / cores
+
+    return peakV, avgV
+
 def parse_pm_table():
     codename = getCodeName()
     ccds     = getCCDCount()
@@ -224,10 +238,11 @@ def parse_pm_table():
                 print("Core #{:d}: Sleeping  ({:4.2f} %)".format(i, activity))
             i = i + 1
 
-        peakV = read_float(pm, 0x02C)
+        print("Peak Frequency:  {:.0f} MHz".format(peakFreq))
 
-        print("Peak Frequency: {:.0f} MHz".format(peakFreq))
-        print("Peak Voltage:   {:2.4f} V".format(peakV))
+        peakV, avgV = getCoreVoltage(pm, cores)
+        print("Peak Voltage:    {:2.4f} V".format(peakV))
+        print("Average Voltage: {:2.4f} V".format(avgV))
         
         pptW  = read_float(pm, 0x000)
         pptU  = read_float(pm, 0x004)
