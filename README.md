@@ -198,6 +198,24 @@ On supported platforms, this lists the maximum size of the `/sys/kernel/ryzen_sm
 
 Note: File is a 64 bit word encoded in little-endian binary order.
 
+#### `/sys/kernel/ryzen_smu_drv/pm_table_size`
+
+On supported platforms, which are Matisse and Renoir systems, this lists the type of the PM table.
+
+The following table lists the known characteristics per type:
+
+Note: File is a 32 bit word encoded in little-endian binary order.
+
+| Hex      | Platform | Table Size (Hex) |
+|:--------:|:--------:|:----------------:|
+| 0x240902 | Matisse  | 0x514            |
+| 0x240903 | Matisse  | 0x518            |
+| 0x240802 | Matisse  | 0x7E0            |
+| 0x240803 | Matisse  | 0x7E4            |
+| 0x370000 | Renoir   | 0x794            |
+| 0x370001 | Renoir   | 0x884            |
+| 0x370002 | Renoir   | 0x88C            |
+
 #### `/sys/kernel/ryzen_smu_drv/pm_table`
 
 On supported platforms, this file contains the PM table for the processor, as updated by the SMU.
