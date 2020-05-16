@@ -198,7 +198,7 @@ On supported platforms, this lists the maximum size of the `/sys/kernel/ryzen_sm
 
 Note: File is a 64 bit word encoded in little-endian binary order.
 
-#### `/sys/kernel/ryzen_smu_drv/pm_table_size`
+#### `/sys/kernel/ryzen_smu_drv/pm_table_type`
 
 On supported platforms, which are Matisse and Renoir systems, this lists the type of the PM table.
 
