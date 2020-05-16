@@ -15,6 +15,7 @@ FS_PATH  = '/sys/kernel/ryzen_smu_drv/'
 SMN_PATH = FS_PATH + 'smn'
 VER_PATH = FS_PATH + 'version'
 PM_PATH  = FS_PATH + 'pm_table'
+PMT_PATH = FS_PATH + 'pm_table_type'
 CN_PATH  = FS_PATH + 'codename'
 
 def is_root():
@@ -22,9 +23,6 @@ def is_root():
 
 def driver_loaded():
     return os.path.isfile(VER_PATH)
-
-def pm_table_supported():
-    return os.path.isfile(PM_PATH)
 
 def read_file32(file):
     with open(file, "rb") as fp:
@@ -40,6 +38,9 @@ def write_file32(file, value):
         fp.close()
 
     return result == 4
+
+def pm_table_supported():
+    return os.path.isfile(PM_PATH)
 
 def write_file64(file, value1, value2):
     with open(file, "wb") as fp:
@@ -186,17 +187,19 @@ def getCpuModel():
 
 def getCoreVoltage(pm, cores):
     totalV = i = 0
-    peakV = read_float(pm, 0x02C)
+    peakV = read_float(pm, 0x0A0)
+    idle = read_float(pm, 0x21C)
+    avgV = (peakV * (1.0 - (idle * 0.01))) + (0.002 * idle)
 
-    while i < 8:
+    while i < cores:
         if read_float(pm, 0x2EC + (i * 4)) != 0.0:
-            usage = read_float(pm, 0x36C + (4 * i)) / 100.0
-            totalV = totalV + ((1.0 - usage) * peakV) + (0.2 * usage)
+            sleepTime = read_float(pm, 0x36C + (4 * i)) / 100.0
+            totalV = totalV + ((1.0 - sleepTime) * avgV) + (0.2 * sleepTime)
         i = i + 1
 
     avgV = totalV / cores
 
-    return peakV, avgV
+    return read_float(pm, 0x02C), peakV, avgV
 
 def parse_pm_table():
     codename = getCodeName()
@@ -204,11 +207,12 @@ def parse_pm_table():
     cores    = getCoreCount()
     model    = getCpuModel()
 
-    pm = read_pm_table()
+    pm       = read_pm_table()
 
-    fclkMHz = read_float(pm, 0x118)
-    uclkMHz = read_float(pm, 0x128)
-    mclkMHz = read_float(pm, 0x138)
+    fclkMHz  = read_float(pm, 0xC0)
+    uclkMHz  = read_float(pm, 0x128)
+    mclkMHz  = read_float(pm, 0x138)
+
     if uclkMHz == mclkMHz:
         coupledMode = "ON"
     else:
@@ -240,10 +244,13 @@ def parse_pm_table():
 
         print("Peak Frequency:  {:.0f} MHz".format(peakFreq))
 
-        peakV, avgV = getCoreVoltage(pm, cores)
+        svi2V, peakV, avgV = getCoreVoltage(pm, cores)
+        print("SVI2 Voltage:    {:2.4f} V".format(svi2V))
         print("Peak Voltage:    {:2.4f} V".format(peakV))
         print("Average Voltage: {:2.4f} V".format(avgV))
         
+        print("============================================\n")
+        print("================ PBO LIMITS ================")
         pptW  = read_float(pm, 0x000)
         pptU  = read_float(pm, 0x004)
         tdcA  = read_float(pm, 0x008)
@@ -298,6 +305,9 @@ def main():
         return
 
     if pm_table_supported():
+        if read_file32(PMT_PATH) != 0x240903:
+            print("WARNING: PM Table type is unsupported. Press any key to continue anyway. Output may be wrong.")
+            input()
         parse_pm_table()
     else:
         print("PM Table: Unsupported")
