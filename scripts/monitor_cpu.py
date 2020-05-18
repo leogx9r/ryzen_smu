@@ -230,6 +230,7 @@ def parse_pm_table():
         while i < cores:
             freq = read_float(pm, 0x30C + i * 4) * 1000.0
             activity = read_float(pm, 0x32C + i * 4)
+            power = read_float(pm, 0x24C + i * 4)
 
             if peakFreq < freq:
                 peakFreq = freq
@@ -237,9 +238,9 @@ def parse_pm_table():
             totalA = totalA + activity
 
             if activity >= 6.0:
-                print("Core #{:d}: {:4.0f} MHz ({:4.2f} %)".format(i, freq, activity))
+                print("Core #{:d}: {:4.0f} MHz  @ {:4.2f} W ({:4.2f} %)".format(i, freq, power, activity))
             else:
-                print("Core #{:d}: Sleeping  ({:4.2f} %)".format(i, activity))
+                print("Core #{:d}: Sleeping  @ {:4.2f} W ({:4.2f} %)".format(i, power, activity))
             i = i + 1
 
         print("Peak Frequency:  {:.0f} MHz".format(peakFreq))
