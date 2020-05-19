@@ -338,4 +338,4 @@ module_param(smu_pm_update_ms, uint, 0644);
 MODULE_PARM_DESC(smu_pm_update_ms, "Controls how often in milliseconds, the SMU is commanded to update the PM table. Default: 1000ms");
 
 module_param(smu_timeout_attempts, uint, 0644);
-MODULE_PARM_DESC(smu_timeout_attempts, "Waits at most, this many milliseconds till an executing SMU command is determined to have timed out. Default: 1000ms");
+MODULE_PARM_DESC(smu_timeout_attempts, "Waits at most, this many milliseconds till an executing SMU command is determined to have timed out. Default: 8192");
