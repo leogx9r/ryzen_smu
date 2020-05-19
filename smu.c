@@ -73,6 +73,13 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
     while (tmp == 0 && retries--)
         tmp = smu_read_address(dev, g_smu.addr_mb_rsp);
 
+    // Step 1.b: A command is still being processed meaning
+    //  a new command cannot be issued.
+    if (!retries && !tmp) {
+        mutex_unlock(&amd_smu_mutex);
+        return SMU_Return_CommandTimeout;
+    }
+
     // Step 2: Write zero (0) to the RSP register
     smu_write_address(dev, g_smu.addr_mb_rsp, 0);
 
