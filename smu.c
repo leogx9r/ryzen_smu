@@ -154,7 +154,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
         g_smu.codename = CODENAME_RENOIR;
     }
     else if (e_model & 0xFFFFFFE0 || e_model == 24) {
-        if ((smu_read_address(dev, 0x5D5C0) - 1) & 0xfffffffd || pkg_type != 2) {
+        if (((smu_read_address(dev, 0x5D5C0) >> 30) - 1) & 0xfffffffd || pkg_type != 2) {
             if (e_model != 24) {
                 pr_err("cpuid: failed to detect processor codename (3)");
                 return -3;
