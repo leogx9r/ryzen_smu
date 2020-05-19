@@ -93,7 +93,7 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
     smu_write_address(dev, g_smu.addr_mb_cmd, op);
     
     // Step 5: Wait until the Response register is non-zero.
-    tmp = 0; retries = smu_timeout_attempts;
+    tmp = 0;
     while(tmp == 0 && retries--)
         tmp = smu_read_address(dev, g_smu.addr_mb_rsp);
 
