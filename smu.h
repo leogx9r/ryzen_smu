@@ -45,7 +45,7 @@ enum smu_return_val {
     SMU_Return_UnknownCmd        = 0xFE,
     SMU_Return_CmdRejectedPrereq = 0xFD,
     SMU_Return_CmdRejectedBusy   = 0xFC,
-    
+
     // Custom Error Code -- Does not exist in SMU.
 
     // SMU Management failed to respond within the SMU_TIMEOUT_MS range.
@@ -83,7 +83,7 @@ extern uint smu_timeout_attempts;
 
 /**
  * Initializes for SMU use. MUST be called before using any function.
- * 
+ *
  * Returns 0 on success, anything else on failure.
  */
 int smu_init(struct pci_dev* dev);
@@ -106,9 +106,9 @@ void smu_write_address(struct pci_dev* dev, u32 address, u32 value);
 
 /**
  * Performs an SMU request with up to 6 arguments specified in the args array.
- * Results are returned in the args array if the request succeeds with, up to 
+ * Results are returned in the args array if the request succeeds with, up to
  *  n_args being read back.
- * 
+ *
  * Returns an smu_return_val indicating the status of the operation.
  */
 enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32 n_args);
@@ -135,7 +135,7 @@ enum smu_return_val smu_get_pm_table_type(struct pci_dev* dev, u32* type);
 
 /**
  * Reads the PM table for the current CPU, if supported, into the destination buffer.
- * 
+ *
  * Returns an smu_return_val indicating the status of the operation.
  */
 enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, size_t* len);

@@ -227,7 +227,7 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
         smu_pm_update_ms = PM_TABLE_MAX_UPDATE_TIME_MS;
     if (smu_pm_update_ms < PM_TABLE_MIN_UPDATE_TIME_MS)
         smu_pm_update_ms = PM_TABLE_MIN_UPDATE_TIME_MS;
-    
+
     if (smu_timeout_attempts > SMU_RETRIES_MAX)
         smu_timeout_attempts = SMU_RETRIES_MAX;
     if (smu_timeout_attempts < SMU_RETRIES_MIN)

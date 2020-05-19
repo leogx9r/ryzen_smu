@@ -91,7 +91,7 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
 
     // Step 4: Write the message Id into the Message ID register
     smu_write_address(dev, g_smu.addr_mb_cmd, op);
-    
+
     // Step 5: Wait until the Response register is non-zero.
     tmp = 0;
     while(tmp == 0 && retries--)
@@ -138,7 +138,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
                 pr_err("cpuid: failed to detect processor codename (1)");
                 return -1;
             }
-            
+
             g_smu.codename = CODENAME_PINNACLERIDGE;
         }
     }
@@ -157,7 +157,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
             pr_err("cpuid: failed to detect processor codename (2)");
             return -2;
         }
-        
+
         g_smu.codename = CODENAME_RENOIR;
     }
     else if (e_model & 0xFFFFFFE0 || e_model == 24) {
@@ -166,7 +166,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
                 pr_err("cpuid: failed to detect processor codename (3)");
                 return -3;
             }
-                
+
             g_smu.codename = CODENAME_PICASSO;
         }
         else
@@ -243,7 +243,7 @@ u32 smu_get_version(struct pci_dev* dev) {
     ret = smu_send_command(dev, 0x02, args, 1);
     if (ret != SMU_Return_OK)
         return ret;
-    
+
     return args[0];
 }
 
@@ -295,7 +295,7 @@ BASE_ADDR_CLASS_3:
     ret = smu_send_command(dev, fn[0], args, 1);
     if (ret != SMU_Return_OK)
         return ret;
-    
+
     args[0] = 3;
     ret = smu_send_command(dev, fn[2], args, 1);
     if (ret != SMU_Return_OK)
@@ -303,7 +303,7 @@ BASE_ADDR_CLASS_3:
 
     // 1st Base.
     parts[0] = args[0];
-    
+
     args[0] = 3;
     ret = smu_send_command(dev, fn[1], args, 1);
     if (ret != SMU_Return_OK)
@@ -313,7 +313,7 @@ BASE_ADDR_CLASS_3:
     ret = smu_send_command(dev, fn[0], args, 1);
     if (ret != SMU_Return_OK)
         return ret;
-    
+
     args[0] = 5;
     ret = smu_send_command(dev, fn[2], args, 1);
     if (ret != SMU_Return_OK)
@@ -349,7 +349,7 @@ enum smu_return_val smu_probe_pm_table(struct pci_dev* dev) {
         default:
             return SMU_Return_Unsupported;
     }
-    
+
     return smu_send_command(dev, fn, args, 1);
 }
 
