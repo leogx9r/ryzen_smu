@@ -9,7 +9,7 @@ from time import sleep
 FS_PATH  = '/sys/kernel/ryzen_smu_drv/'
 VER_PATH = FS_PATH + 'version'
 PM_PATH  = FS_PATH + 'pm_table'
-PMT_PATH = FS_PATH + 'pm_table_type'
+PMV_PATH = FS_PATH + 'pm_table_version'
 CN_PATH  = FS_PATH + 'codename'
 
 def is_root():
@@ -78,15 +78,15 @@ def getCodeName():
 
     return False
 
-def dump(prefix, codename, type, idx):
+def dump(prefix, codename, version, idx):
     BASEDIR = "./pm_dumps"
 
     if os.path.exists(BASEDIR) == False:
         os.mkdir(BASEDIR)
 
-    # [BASEDIR]/[prefix]_[codename]_[type]_[idx].bin
+    # [BASEDIR]/[prefix]_[codename]_[version]_[idx].bin
     pathname = BASEDIR + "/{:s}_{:s}_{:08x}_{:d}.bin" \
-        .format(prefix, codename.replace(" ", "_").lower(), type, idx)
+        .format(prefix, codename.replace(" ", "_").lower(), version, idx)
 
     try:
         print("Writing file: {0} ...".format(pathname))
@@ -140,29 +140,29 @@ def dumperPreInit():
         print("Unable to retrieve the processor codename")
         exit(4)
     
-    type = read_file32(PMT_PATH)
+    version = read_file32(PMV_PATH)
 
-    if type == False:
-        type = 0
+    if version == False:
+        version = 0
     
     tester, testerPath = findBenchPath()
-    return [codename, type, tester, testerPath]
+    return [codename, version, tester, testerPath]
 
 def main():
     SAMPLES = 15
     DELAY   = 1
 
-    codename, type, tester, testerPath = dumperPreInit()
+    codename, version, tester, testerPath = dumperPreInit()
 
     print("Code Name: {0}".format(codename))
-    print("PM Table Type: 0x{:08X}".format(type))
+    print("PM Table Version: 0x{:08X}".format(version))
     print("Tester: \"{0}\"".format(tester))
 
     print("Dumping {:d} instances of the PM table while idle ...".format(SAMPLES))
 
     i = 0
     while i < SAMPLES:
-        dump("idle", codename, type, i)
+        dump("idle", codename, version, i)
         i = i + 1
         sleep(DELAY)
     
@@ -171,7 +171,7 @@ def main():
     
     i = 0
     while i < SAMPLES:
-        dump("load", codename, type, i)
+        dump("load", codename, version, i)
         i = i + 1
         sleep(DELAY)
     

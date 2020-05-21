@@ -15,7 +15,7 @@ FS_PATH  = '/sys/kernel/ryzen_smu_drv/'
 SMN_PATH = FS_PATH + 'smn'
 VER_PATH = FS_PATH + 'version'
 PM_PATH  = FS_PATH + 'pm_table'
-PMT_PATH = FS_PATH + 'pm_table_type'
+PMT_PATH = FS_PATH + 'pm_table_version'
 CN_PATH  = FS_PATH + 'codename'
 
 def is_root():
@@ -209,15 +209,6 @@ def parse_pm_table():
 
     pm       = read_pm_table()
 
-    fclkMHz  = read_float(pm, 0xC0)
-    uclkMHz  = read_float(pm, 0x128)
-    mclkMHz  = read_float(pm, 0x138)
-
-    if uclkMHz == mclkMHz:
-        coupledMode = "ON"
-    else:
-        coupledMode = "OFF"
-
     while True:
         print("\033c================  CPU INFO  ================")
 
@@ -258,29 +249,46 @@ def parse_pm_table():
         tdcU  = read_float(pm, 0x00C)
         tjMax = read_float(pm, 0x010)
         tempC = read_float(pm, 0x014)
+
         edcA  = read_float(pm, 0x020)
         edcU  = read_float(pm, 0x024) * (totalA / cores / 100)
+
         CorP  = read_float(pm, 0x060)
         SoCP  = read_float(pm, 0x064)
 
-        SoCV_SVI2 = read_float(pm, 0xB4)
-        SoCC_SVI2 = SoCP / SoCV_SVI2
+        SoCV = read_float(pm, 0xB4)
+        SoCC = read_float(pm, 0xB8)
 
         if edcU < tdcU:
             edcU = tdcU
 
         print("TjMax: {:4.2f} °C".format(tjMax))
         print("Temp:  {:4.2f} °C".format(tempC))
-        print("Core:  {:4.2f} W".format(CorP))
-        print("SoC:   {:4.2f} W / {:4.2f} A / {:4.2f} V".format(SoCP, SoCC_SVI2, SoCV_SVI2))
-        print("PPT:   {:4.2f} W / {:4.0f} W ({:3.2f}%)".format(pptU, pptW, (pptU / pptW * 100)))
-        print("TDC:   {:4.2f} A / {:4.0f} A ({:3.2f}%)".format(tdcU, tdcA, (tdcU / tdcA * 100)))
-        print("EDC:   {:4.2f} A / {:4.0f} A ({:3.2f}%)".format(edcU, edcA, (edcU / edcA * 100)))
+        print("Core:  {:4.4f} W".format(CorP))
+        print("SoC:   {:4.2f} W / {:4.2f} A / {:4.2f} V".format(SoCP, SoCC, SoCV))
+        print("PPT:   {:4.2f} W / {:4.0f} W ({:4.2f}%)".format(pptU, pptW, (pptU / pptW * 100)))
+        print("TDC:   {:4.2f} A / {:4.0f} A ({:4.2f}%)".format(tdcU, tdcA, (tdcU / tdcA * 100)))
+        print("EDC:   {:4.2f} A / {:4.0f} A ({:4.2f}%)".format(edcU, edcA, (edcU / edcA * 100)))
         print("============================================\n")
 
         SoCV  = read_float(pm, 0x0B0)
         vddpV = read_float(pm, 0x1F4)
         vddgV = read_float(pm, 0x1F8)
+
+        fclkMHz  = read_float(pm, 0xC0)
+        uclkMHz  = read_float(pm, 0x128)
+        mclkMHz  = read_float(pm, 0x138)
+
+        if uclkMHz == mclkMHz:
+            coupledMode = "ON"
+        else:
+            coupledMode = "OFF"
+
+        # TODO: Verify these?
+        # 0x108 (BCLK?)
+        # 0x1D0 (+5V ?)
+        # 0x1F0 (MEM VTT?)
+        # 0x208 (Peak Core Freq?)
 
         print("================   MEMORY   ================")
         print("Coupled Mode: " + coupledMode)
@@ -307,7 +315,7 @@ def main():
 
     if pm_table_supported():
         if read_file32(PMT_PATH) != 0x240903:
-            print("WARNING: PM Table type is unsupported. Press any key to continue anyway. Output may be wrong.")
+            print("WARNING: PM Table version is unsupported. Press any key to continue anyway. Output may be wrong.")
             input()
         parse_pm_table()
     else:

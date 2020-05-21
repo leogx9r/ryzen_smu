@@ -34,6 +34,7 @@ When loaded, the driver exposes several files under sysfs which can only be read
 
 For supported PM table models, the following files are additionally exposed:
 
+- `/sys/kernel/ryzen_smu_drv/pm_table_version`
 - `/sys/kernel/ryzen_smu_drv/pm_table_size`
 - `/sys/kernel/ryzen_smu_drv/pm_table`
 
@@ -86,6 +87,7 @@ drwxr-xr-x 14 root root    0 May  7 03:01 ../
 -r--------  1 root root 4.0K May  7 03:12 codename
 -r--------  1 root root 4.0K May  7 03:12 pm_table
 -r--------  1 root root 4.0K May  7 03:12 pm_table_size
+-r--------  1 root root 4.0K May  7 03:12 pm_table_version
 -rw-------  1 root root 4.0K May  7 03:10 smn
 -rw-------  1 root root 4.0K May  7 03:10 smu_args
 -rw-------  1 root root 4.0K May  7 03:10 smu_cmd
@@ -198,11 +200,11 @@ On supported platforms, this lists the maximum size of the `/sys/kernel/ryzen_sm
 
 Note: File is a 64 bit word encoded in little-endian binary order.
 
-#### `/sys/kernel/ryzen_smu_drv/pm_table_type`
+#### `/sys/kernel/ryzen_smu_drv/pm_table_version`
 
-On supported platforms, which are Matisse and Renoir systems, this lists the type of the PM table.
+On supported platforms, which are Matisse and Renoir systems, this lists the version of the PM table.
 
-The following table lists the known characteristics per type:
+The following table lists the known characteristics per version:
 
 Note: File is a 32 bit word encoded in little-endian binary order.
 

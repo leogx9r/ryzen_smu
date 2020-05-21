@@ -325,11 +325,12 @@ BASE_ADDR_CLASS_3:
     return (u64)parts[1] << 32 | parts[0];
 }
 
-enum smu_return_val smu_probe_pm_table(struct pci_dev* dev) {
+enum smu_return_val smu_transfer_table_to_dram(struct pci_dev* dev) {
     u32 args[6] = { 0, 0, 0, 0, 0, 0 }, fn;
 
     /**
      * Probes (updates) the PM Table.
+     * SMC Message corresponds to TransferTableSmu2Dram.
      * Physically mapped at the DRAM Base address(es).
      */
 
@@ -353,11 +354,12 @@ enum smu_return_val smu_probe_pm_table(struct pci_dev* dev) {
     return smu_send_command(dev, fn, args, 1);
 }
 
-enum smu_return_val smu_get_pm_table_type(struct pci_dev* dev, u32* type) {
+enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) {
     u32 fn;
 
     /**
      * For Matisse & Renoir, there are different PM tables for each chip.
+     * SMC Message corresponds to TableVersionId.
      * Presumably this is based on core count.
      */
     switch (g_smu.codename) {
@@ -371,12 +373,12 @@ enum smu_return_val smu_get_pm_table_type(struct pci_dev* dev, u32* type) {
             return SMU_Return_Unsupported;
     }
 
-    *type = 0;
-    return smu_send_command(dev, fn, type, 1);
+    *version = 0;
+    return smu_send_command(dev, fn, version, 1);
 }
 
 enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, size_t* len) {
-    u32 ret, type, size;
+    u32 ret, version, size;
     u64 tm;
 
     // The DRAM base does not change across boots meaning it only needs to be
@@ -385,22 +387,22 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
         g_smu.pm_dram_base = smu_get_dram_base_address(dev);
 
         if (g_smu.pm_dram_base < 0xFF && g_smu.pm_dram_base >= 0) {
-            pr_err("Unable to receive the DRAM base address (%d)", (u8)g_smu.pm_dram_base);
+            pr_err("Unable to receive the DRAM base address (%X)", (u8)g_smu.pm_dram_base);
             return g_smu.pm_dram_base;
         }
 
-        // Each model has different types and sizes.
+        // Each model has different versions and sizes.
         if (g_smu.codename == CODENAME_MATISSE || g_smu.codename == CODENAME_RENOIR) {
-            ret = smu_get_pm_table_type(dev, &type);
+            ret = smu_get_pm_table_version(dev, &version);
 
             if (ret != SMU_Return_OK) {
-                pr_err("Failed to get PM Table type, returned %d\n", ret);
+                pr_err("Failed to get PM Table version, returned %X\n", ret);
                 return ret;
             }
         }
         switch (g_smu.codename) {
             case CODENAME_MATISSE:
-                switch (type) {
+                switch (version) {
                     case 0x240902:
                         g_smu.pm_dram_map_size = 0x514;
                         break;
@@ -414,13 +416,13 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
                         g_smu.pm_dram_map_size = 0x7E4;
                         break;
                     default:
-                    UNKNOWN_PM_TABLE_TYPE:
-                        pr_err("Unknown PM table type: 0x%08X", type);
+                    UNKNOWN_PM_TABLE_VERSION:
+                        pr_err("Unknown PM table version: 0x%08X", version);
                         return SMU_Return_Unsupported;
                 }
                 break;
             case CODENAME_RENOIR:
-                switch (type) {
+                switch (version) {
                     case 0x370000:
                         g_smu.pm_dram_map_size = 0x794;
                         break;
@@ -431,7 +433,7 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
                         g_smu.pm_dram_map_size = 0x88C;
                         break;
                     default:
-                        goto UNKNOWN_PM_TABLE_TYPE;
+                        goto UNKNOWN_PM_TABLE_VERSION;
                 }
                 break;
             case CODENAME_PICASSO:
@@ -463,7 +465,7 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
     // Check if we should tell the SMU to refresh the table with nanosecond precision
     tm = ktime_get_ns();
     if ((tm - g_smu.pm_last_probe_ns) > (1000000 * smu_pm_update_ms)) {
-        ret = smu_probe_pm_table(dev);
+        ret = smu_transfer_table_to_dram(dev);
         if (ret != SMU_Return_OK)
             return ret;
 

@@ -40,7 +40,7 @@ static struct ryzen_smu_data {
     u32                     smn_result;
 
     u8*                     pm_table;
-    u32                     pm_table_type;
+    u32                     pm_table_version;
     size_t                  pm_table_read_size;
 } g_driver = {
     .device               = NULL,
@@ -54,7 +54,7 @@ static struct ryzen_smu_data {
     .smn_result           = 0,
 
     .pm_table             = NULL,
-    .pm_table_type        = 0,
+    .pm_table_version     = 0,
     .pm_table_read_size   = PM_TABLE_MAX_SIZE,
 };
 
@@ -82,10 +82,10 @@ static ssize_t pm_table_show(struct kobject *kobj, struct kobj_attribute *attr, 
     return g_driver.pm_table_read_size;
 }
 
-static ssize_t pm_table_type_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
-    ssize_t sz = sizeof(g_driver.pm_table_type);
+static ssize_t pm_table_version_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
+    ssize_t sz = sizeof(g_driver.pm_table_version);
 
-    memcpy(buff, &g_driver.pm_table_type, sz);
+    memcpy(buff, &g_driver.pm_table_version, sz);
     return sz;
 }
 
@@ -176,15 +176,16 @@ __RO_ATTR (version);
 __RO_ATTR (codename);
 
 __RO_ATTR (pm_table);
-__RO_ATTR (pm_table_type);
 __RO_ATTR (pm_table_size);
+__RO_ATTR (pm_table_version);
 
 __RW_ATTR (smu_cmd);
 __RW_ATTR (smu_args);
 
 __RW_ATTR (smn);
 
-static struct attribute *drv_attrs[9] = {
+#define MAX_ATTRS_LEN                   9
+static struct attribute *drv_attrs[MAX_ATTRS_LEN] = {
     &dev_attr_version.attr,
     &dev_attr_codename.attr,
     &dev_attr_smu_args.attr,
@@ -244,11 +245,11 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
     }
 
     // Check that PM table options are supported before adding it to the attr list
-    ret = smu_probe_pm_table(g_driver.device);
+    ret = smu_transfer_table_to_dram(g_driver.device);
     if (ret == SMU_Return_OK) {
-        ret = smu_get_pm_table_type(g_driver.device, &g_driver.pm_table_type);
+        ret = smu_get_pm_table_version(g_driver.device, &g_driver.pm_table_version);
         if (ret != SMU_Return_OK && ret != SMU_Return_Unsupported) {
-            pr_err("Unable to resolve which PM table type the system uses");
+            pr_err("Unable to resolve which PM table version the system uses");
             goto _CONTINUE_SETUP;
         }
 
@@ -263,11 +264,11 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
         ret = smu_read_pm_table(dev, g_driver.pm_table, &g_driver.pm_table_read_size);
         if (ret == SMU_Return_OK) {
             pr_debug("Probe succeeded: read %ld bytes", g_driver.pm_table_read_size);
-            drv_attrs[5] = &dev_attr_pm_table_size.attr;
-            drv_attrs[6] = &dev_attr_pm_table.attr;
+            drv_attrs[MAX_ATTRS_LEN - 4] = &dev_attr_pm_table_size.attr;
+            drv_attrs[MAX_ATTRS_LEN - 3] = &dev_attr_pm_table.attr;
 
-            if (g_driver.pm_table_type)
-                drv_attrs[7] = &dev_attr_pm_table_type.attr;
+            if (g_driver.pm_table_version)
+                drv_attrs[MAX_ATTRS_LEN - 2] = &dev_attr_pm_table_version.attr;
         }
         else
             pr_err("Failed to probe the PM table -- disabling feature (%d)", ret);
