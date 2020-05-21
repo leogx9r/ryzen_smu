@@ -229,17 +229,17 @@ def parse_pm_table():
             totalA = totalA + activity
 
             if activity >= 6.0:
-                print("Core #{:d}: {:4.0f} MHz  @ {:4.2f} W ({:4.2f} %)".format(i, freq, power, activity))
+                print("Core #{:d}: {:4.0f} MHz  @ {:4.4f} W ({:4.2f} %)".format(i, freq, power, activity))
             else:
-                print("Core #{:d}: Sleeping  @ {:4.2f} W ({:4.2f} %)".format(i, power, activity))
+                print("Core #{:d}: Sleeping  @ {:4.4f} W ({:4.2f} %)".format(i, power, activity))
             i = i + 1
 
         print("Peak Frequency:  {:.0f} MHz".format(peakFreq))
 
         svi2V, peakV, avgV = getCoreVoltage(pm, cores)
-        print("SVI2 Voltage:    {:2.4f} V".format(svi2V))
-        print("Peak Voltage:    {:2.4f} V".format(peakV))
-        print("Average Voltage: {:2.4f} V".format(avgV))
+        print("SVI2 Voltage:    {:2.6f} V".format(svi2V))
+        print("Peak Voltage:    {:2.6f} V".format(peakV))
+        print("Average Voltage: {:2.6f} V".format(avgV))
         
         print("============================================\n")
         print("================ PBO LIMITS ================")
@@ -275,9 +275,10 @@ def parse_pm_table():
         vddpV = read_float(pm, 0x1F4)
         vddgV = read_float(pm, 0x1F8)
 
-        fclkMHz  = read_float(pm, 0xC0)
-        uclkMHz  = read_float(pm, 0x128)
-        mclkMHz  = read_float(pm, 0x138)
+        fclkMHz    = read_float(pm, 0xC0)
+        fclkAvgMHz = read_float(pm, 0xC4)
+        uclkMHz    = read_float(pm, 0x128)
+        mclkMHz    = read_float(pm, 0x138)
 
         if uclkMHz == mclkMHz:
             coupledMode = "ON"
@@ -292,6 +293,7 @@ def parse_pm_table():
 
         print("================   MEMORY   ================")
         print("Coupled Mode: " + coupledMode)
+        print("FCLK (Avg):   {:.0f} MHz".format(fclkAvgMHz))
         print("FCLK:         {:.0f} MHz".format(fclkMHz))
         print("UCLK:         {:.0f} MHz".format(uclkMHz))
         print("MCLK:         {:.0f} MHz".format(mclkMHz))
