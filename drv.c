@@ -250,7 +250,7 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
     if (ret == SMU_Return_OK) {
         ret = smu_get_pm_table_version(g_driver.device, &g_driver.pm_table_version);
         if (ret != SMU_Return_OK && ret != SMU_Return_Unsupported) {
-            pr_err("Unable to resolve which PM table version the system uses");
+            pr_err("Unable to resolve which PM table version the system uses -- disabling feature (%d)", ret);
             goto _CONTINUE_SETUP;
         }
 
