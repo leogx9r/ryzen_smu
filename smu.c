@@ -23,8 +23,8 @@ static struct {
     u32                            pm_dram_map_size_alt;
     u64                            pm_last_probe_ns;
 
-    u8*                            pm_table_virt_addr;
-    u8*                            pm_table_virt_addr_alt;
+    u8 __iomem*                    pm_table_virt_addr;
+    u8 __iomem*                    pm_table_virt_addr_alt;
 } g_smu = {
     .codename                    = CODENAME_UNDEFINED,
 
@@ -477,7 +477,7 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
 
     // We only map the DRAM base(s) once for use.
     if (g_smu.pm_table_virt_addr == NULL) {
-        g_smu.pm_table_virt_addr = ioremap(g_smu.pm_dram_base, size);
+        g_smu.pm_table_virt_addr = ioremap_cache(g_smu.pm_dram_base, size);
 
         if (g_smu.pm_table_virt_addr == NULL) {
             pr_err("Failed to map DRAM base: %llX (0x%X B)", g_smu.pm_dram_base, size);
@@ -486,7 +486,7 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
 
         // In Picasso/RavenRidge 2, we map the secondary (high) address as well.
         if (g_smu.pm_dram_map_size_alt) {
-            g_smu.pm_table_virt_addr_alt = ioremap(g_smu.pm_dram_base_alt, g_smu.pm_dram_map_size_alt);
+            g_smu.pm_table_virt_addr_alt = ioremap_cache(g_smu.pm_dram_base_alt, g_smu.pm_dram_map_size_alt);
 
             if (g_smu.pm_table_virt_addr_alt == NULL) {
                 pr_err("Failed to map DRAM alt base: %X (0x%X B)", g_smu.pm_dram_base_alt, g_smu.pm_dram_map_size_alt);
@@ -495,11 +495,11 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
         }
     }
 
-    memcpy(dst, g_smu.pm_table_virt_addr, size);
+    memcpy_fromio(dst, g_smu.pm_table_virt_addr, size);
 
     // Append secondary table if required.
     if (g_smu.pm_dram_map_size_alt)
-        memcpy(dst + size, g_smu.pm_table_virt_addr_alt, g_smu.pm_dram_map_size_alt);
+        memcpy_fromio(dst + size, g_smu.pm_table_virt_addr_alt, g_smu.pm_dram_map_size_alt);
 
     return SMU_Return_OK;
 }
