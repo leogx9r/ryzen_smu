@@ -60,6 +60,7 @@ static struct ryzen_smu_data {
 };
 
 /* SMU Command Parameters. */
+uint smu_pm_use_timer = 1;
 uint smu_pm_update_ms = 1000;
 uint smu_timeout_attempts = 8192;
 
@@ -336,6 +337,9 @@ static void ryzen_smu_driver_exit(void) {
 
 module_init(ryzen_smu_driver_init);
 module_exit(ryzen_smu_driver_exit);
+
+module_param(smu_pm_use_timer, uint, 0644);
+MODULE_PARM_DESC(smu_pm_use_timer, "Indicates whether PM table reads will be updated using the timeout from smu_pm_update_ms or not. Default: 1 (true)");
 
 module_param(smu_pm_update_ms, uint, 0644);
 MODULE_PARM_DESC(smu_pm_update_ms, "Controls how often in milliseconds, the SMU is commanded to update the PM table. Default: 1000ms");

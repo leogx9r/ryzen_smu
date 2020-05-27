@@ -463,13 +463,20 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
     *len = g_smu.pm_dram_map_size;
 
     // Check if we should tell the SMU to refresh the table with nanosecond precision
-    tm = ktime_get_ns();
-    if ((tm - g_smu.pm_last_probe_ns) > (1000000 * smu_pm_update_ms)) {
+    if (smu_pm_use_timer) {
+        tm = ktime_get_ns();
+        if ((tm - g_smu.pm_last_probe_ns) > (1000000 * smu_pm_update_ms)) {
+            ret = smu_transfer_table_to_dram(dev);
+            if (ret != SMU_Return_OK)
+                return ret;
+
+            g_smu.pm_last_probe_ns = tm;
+        }
+    }
+    else {
         ret = smu_transfer_table_to_dram(dev);
         if (ret != SMU_Return_OK)
             return ret;
-
-        g_smu.pm_last_probe_ns = tm;
     }
 
     // Primary PM Table size

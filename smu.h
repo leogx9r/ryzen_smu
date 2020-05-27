@@ -78,6 +78,7 @@ enum smu_processor_codename {
 };
 
 /* Parameters for SMU execution. */
+extern uint smu_pm_use_timer;
 extern uint smu_pm_update_ms;
 extern uint smu_timeout_attempts;
 
