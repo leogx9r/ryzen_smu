@@ -122,7 +122,7 @@ def smu_command(op, arg1, arg2 = 0, arg3 = 0, arg4 = 0, arg5 = 0, arg6 = 0):
     # Check for the result:
     value = read_file32(SMU_CMD)
     if value != False:
-        while value == "0\n":
+        while value == 0:
             print("Wating for existing SMU command to complete ...")
             sleep(1)
             value = read_file32(SMU_CMD)
