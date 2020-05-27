@@ -85,7 +85,6 @@ def read_smn_addr(addr):
     value = read_file32(SMN_PATH)
     
     if value == False:
-        print("Failed to read SMN address: {:08X}".format(addr))
         return 0
     
     return value

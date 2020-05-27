@@ -265,7 +265,7 @@ def parse_pm_table():
         print("TjMax: {:4.2f} °C".format(tjMax))
         print("Temp:  {:4.2f} °C".format(tempC))
         print("Core:  {:4.4f} W".format(CorP))
-        print("SoC:   {:4.2f} W / {:4.2f} A / {:4.2f} V".format(SoCP, SoCC, SoCV))
+        print("SoC:   {:4.2f} W / {:4.2f} A / {:4.6f} V".format(SoCP, SoCC, SoCV))
         print("PPT:   {:4.2f} W / {:4.0f} W ({:4.2f}%)".format(pptU, pptW, (pptU / pptW * 100)))
         print("TDC:   {:4.2f} A / {:4.0f} A ({:4.2f}%)".format(tdcU, tdcA, (tdcU / tdcA * 100)))
         print("EDC:   {:4.2f} A / {:4.0f} A ({:4.2f}%)".format(edcU, edcA, (edcU / edcA * 100)))
