@@ -69,9 +69,10 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
     mutex_lock(&amd_smu_mutex);
 
     // Step 1: Wait until the RSP register is non-zero.
-    tmp = 0; retries = smu_timeout_attempts;
-    while (tmp == 0 && retries--)
+    retries = smu_timeout_attempts;
+    do
         tmp = smu_read_address(dev, g_smu.addr_mb_rsp);
+    while (tmp == 0 && retries--);
 
     // Step 1.b: A command is still being processed meaning
     //  a new command cannot be issued.
@@ -93,9 +94,9 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
     smu_write_address(dev, g_smu.addr_mb_cmd, op);
 
     // Step 5: Wait until the Response register is non-zero.
-    tmp = 0;
-    while(tmp == 0 && retries--)
+    do
         tmp = smu_read_address(dev, g_smu.addr_mb_rsp);
+    while(tmp == 0 && retries--);
 
     // Step 6: If the Response register contains OK, then SMU has finished processing
     //  the message.
@@ -256,8 +257,7 @@ u64 smu_get_dram_base_address(struct pci_dev* dev) {
             fn[0] = 0x06;
             goto BASE_ADDR_CLASS_1;
         case CODENAME_RENOIR:
-            fn[0] = 0x65;
-            fn[1] = 0x66;
+            fn[0] = 0x66;
             goto BASE_ADDR_CLASS_1;
         case CODENAME_COLFAX:
         case CODENAME_PINNACLERIDGE:
@@ -430,6 +430,9 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
                         g_smu.pm_dram_map_size = 0x884;
                         break;
                     case 0x370002:
+                        g_smu.pm_dram_map_size = 0x88C;
+                        break;
+                    case 0x370003:
                         g_smu.pm_dram_map_size = 0x88C;
                         break;
                     default:
