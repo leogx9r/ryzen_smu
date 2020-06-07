@@ -18,6 +18,8 @@ PM_PATH  = FS_PATH + 'pm_table'
 PMT_PATH = FS_PATH + 'pm_table_version'
 CN_PATH  = FS_PATH + 'codename'
 
+PM_TABLE_FP = False
+
 def is_root():
     return os.getenv("SUDO_USER") is not None or os.geteuid() == 0
 
@@ -81,9 +83,13 @@ def read_smn_addr(addr):
     return value
 
 def read_pm_table():
-    with open("/sys/kernel/ryzen_smu_drv/pm_table", "rb") as file:
-        content = file.read()
-        file.close()
+    global PM_TABLE_FP
+
+    if PM_TABLE_FP == False:
+        PM_TABLE_FP = open(PM_PATH, "rb")
+
+    PM_TABLE_FP.seek(0, os.SEEK_SET)
+    content = PM_TABLE_FP.read()
 
     return content
 
