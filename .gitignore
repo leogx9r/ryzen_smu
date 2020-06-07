@@ -9,3 +9,4 @@ scripts/pm_dumps/
 *.bin
 Module.symvers
 modules.order
+NOTES.txt
