@@ -16,6 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
+#ifndef __LIB_SMU_H__
+#define __LIB_SMU_H__
+
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
@@ -147,3 +150,5 @@ const char* smu_codename_to_str(smu_obj_t* obj);
  * Returns 1 if they are.
  */
 unsigned int smu_pm_tables_supported(smu_obj_t* obj);
+
+#endif /* __LIB_SMU_H__ */
