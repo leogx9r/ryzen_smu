@@ -9,7 +9,9 @@
 #include <linux/printk.h>
 
 /* Redefine output format for nicer formatting. */
-#undef pr_fmt
+#ifdef pr_fmt
+    #undef pr_fmt
+#endif
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 /**
@@ -28,9 +30,6 @@
 /* Specifies the amount of attempts an of polling the SMU for a command response till it fails. */
 #define SMU_RETRIES_MAX                               32768
 #define SMU_RETRIES_MIN                               500
-
-/* How often to poll the SMU response register for a result in milliseconds. */
-#define SMU_POLL_READ_DELAY_MS                        1
 
 /* PCI Query Registers. [0x60,0x64] & [0xB4, 0xB8] also work. */
 #define SMU_PCI_ADDR_REG                              0xC4
