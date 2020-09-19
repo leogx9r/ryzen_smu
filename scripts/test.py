@@ -9,7 +9,7 @@ FS_PATH = '/sys/kernel/ryzen_smu_drv/'
 VER_PATH = FS_PATH + 'version'
 SMN_PATH = FS_PATH + 'smn'
 SMU_ARGS = FS_PATH + 'smu_args'
-SMU_CMD  = FS_PATH + 'smu_cmd'
+RSMU_CMD  = FS_PATH + 'rsmu_cmd'
 CN_PATH  = FS_PATH + 'codename'
 PM_PATH  = FS_PATH + 'pm_table'
 
@@ -100,12 +100,12 @@ def smu_command(op, arg1, arg2 = 0, arg3 = 0, arg4 = 0, arg5 = 0, arg6 = 0):
     check = True
 
     # Check if SMU is currently executing a command
-    value = read_file32(SMU_CMD)
+    value = read_file32(RSMU_CMD)
     if value != False:
         while int(value) == 0:
             print("Wating for existing SMU command to complete ...")
             sleep(1)
-            value = read_file32(SMU_CMD)
+            value = read_file32(RSMU_CMD)
     else:
         print("Failed to get SMU status response")
         return False
@@ -116,16 +116,16 @@ def smu_command(op, arg1, arg2 = 0, arg3 = 0, arg4 = 0, arg5 = 0, arg6 = 0):
         return False
 
     # Write the command
-    if write_file32(SMU_CMD, op) == False:
+    if write_file32(RSMU_CMD, op) == False:
         print("Failed to execute the SMU command: {:08X}".format(op))
     
     # Check for the result:
-    value = read_file32(SMU_CMD)
+    value = read_file32(RSMU_CMD)
     if value != False:
         while value == 0:
             print("Wating for existing SMU command to complete ...")
             sleep(1)
-            value = read_file32(SMU_CMD)
+            value = read_file32(RSMU_CMD)
     else:
         print("SMU OP readback returned false")
         return False
