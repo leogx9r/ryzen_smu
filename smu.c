@@ -13,9 +13,13 @@
 static struct {
     enum smu_processor_codename    codename;
 
-    u32                            addr_mb_cmd;
-    u32                            addr_mb_rsp;
-    u32                            addr_mb_args;
+    u32                            addr_rsmu_mb_cmd;
+    u32                            addr_rsmu_mb_rsp;
+    u32                            addr_rsmu_mb_args;
+
+    u32                            addr_mp1_mb_cmd;
+    u32                            addr_mp1_mb_rsp;
+    u32                            addr_mp1_mb_args;
 
     u64                            pm_dram_base;
     u32                            pm_dram_base_alt;
@@ -28,9 +32,13 @@ static struct {
 } g_smu = {
     .codename                    = CODENAME_UNDEFINED,
 
-    .addr_mb_cmd                 = 0,
-    .addr_mb_rsp                 = 0,
-    .addr_mb_args                = 0,
+    .addr_rsmu_mb_cmd            = 0,
+    .addr_rsmu_mb_rsp            = 0,
+    .addr_rsmu_mb_args           = 0,
+
+    .addr_mp1_mb_cmd             = 0,
+    .addr_mp1_mb_rsp             = 0,
+    .addr_mp1_mb_args            = 0,
 
     .pm_dram_base                = 0,
     .pm_dram_base_alt            = 0,
@@ -63,15 +71,36 @@ void smu_write_address(struct pci_dev* dev, u32 address, u32 value) {
     mutex_unlock(&amd_pci_mutex);
 }
 
-enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32 n_args) {
-    u32 retries, tmp, i;
+enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32 n_args,
+    enum smu_mailbox mailbox) {
+    u32 retries, tmp, i, rsp_addr, args_addr, cmd_addr;
+
+    // == Pick the correct mailbox address. ==
+    switch (mailbox) {
+        case TYPE_RSMU:
+            rsp_addr = g_smu.addr_rsmu_mb_rsp;
+            cmd_addr = g_smu.addr_rsmu_mb_cmd;
+            args_addr = g_smu.addr_rsmu_mb_args;
+            break;
+        case TYPE_MP1:
+            rsp_addr = g_smu.addr_mp1_mb_rsp;
+            cmd_addr = g_smu.addr_mp1_mb_cmd;
+            args_addr = g_smu.addr_mp1_mb_args;
+            break;
+        default:
+            return SMU_Return_Unsupported;
+    }
+
+    // == In the unlikely event a mailbox is undefined, don't even attempt to execute. ==
+    if (!rsp_addr || !cmd_addr || !args_addr)
+        return SMU_Return_Unsupported;
 
     mutex_lock(&amd_smu_mutex);
 
     // Step 1: Wait until the RSP register is non-zero.
     retries = smu_timeout_attempts;
     do
-        tmp = smu_read_address(dev, g_smu.addr_mb_rsp);
+        tmp = smu_read_address(dev, rsp_addr);
     while (tmp == 0 && retries--);
 
     // Step 1.b: A command is still being processed meaning
@@ -82,20 +111,20 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
     }
 
     // Step 2: Write zero (0) to the RSP register
-    smu_write_address(dev, g_smu.addr_mb_rsp, 0);
+    smu_write_address(dev, rsp_addr, 0);
 
     // Step 3: Write the argument(s) into the argument register(s)
     for (i = 0; i < 6; i++) {
         tmp = i >= n_args ? 0 : args[i];
-        smu_write_address(dev, g_smu.addr_mb_args + (i * 4), tmp);
+        smu_write_address(dev, g_smu.addr_rsmu_mb_args + (i * 4), tmp);
     }
 
     // Step 4: Write the message Id into the Message ID register
-    smu_write_address(dev, g_smu.addr_mb_cmd, op);
+    smu_write_address(dev, cmd_addr, op);
 
     // Step 5: Wait until the Response register is non-zero.
     do
-        tmp = smu_read_address(dev, g_smu.addr_mb_rsp);
+        tmp = smu_read_address(dev, rsp_addr);
     while(tmp == 0 && retries--);
 
     // Step 6: If the Response register contains OK, then SMU has finished processing
@@ -108,7 +137,7 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
     // Step 7: If a return argument is expected, the Argument register may be read
     //  at this time.
     for (i = 0; i < n_args; i++)
-        args[i] = smu_read_address(dev, g_smu.addr_mb_args + (i * 4));
+        args[i] = smu_read_address(dev, args_addr + (i * 4));
 
     mutex_unlock(&amd_smu_mutex);
 
@@ -190,34 +219,76 @@ int smu_init(struct pci_dev* dev) {
     if (smu_resolve_cpu_class(dev))
         return -ENODEV;
 
+    // Detect RSMU
     switch (g_smu.codename) {
         case CODENAME_CASTLEPEAK:
         case CODENAME_MATISSE:
-            g_smu.addr_mb_cmd  = 0x3B10524;
-            g_smu.addr_mb_rsp  = 0x3B10570;
-            g_smu.addr_mb_args = 0x3B10A40;
-            pr_debug("SMU mailbox 1 selected for use");
+            g_smu.addr_rsmu_mb_cmd  = 0x3B10524;
+            g_smu.addr_rsmu_mb_rsp  = 0x3B10570;
+            g_smu.addr_rsmu_mb_args = 0x3B10A40;
+            pr_debug("RSMU mailbox 1 selected for use");
             break;
         case CODENAME_COLFAX:
         case CODENAME_SUMMITRIDGE:
         case CODENAME_THREADRIPPER:
         case CODENAME_PINNACLERIDGE:
-            g_smu.addr_mb_cmd  = 0x3B1051C;
-            g_smu.addr_mb_rsp  = 0x3B10568;
-            g_smu.addr_mb_args = 0x3B10590;
-            pr_debug("SMU mailbox 2 selected for use");
+            g_smu.addr_rsmu_mb_cmd  = 0x3B1051C;
+            g_smu.addr_rsmu_mb_rsp  = 0x3B10568;
+            g_smu.addr_rsmu_mb_args = 0x3B10590;
+            pr_debug("RSMU mailbox 2 selected for use");
             break;
         case CODENAME_RENOIR:
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE:
         case CODENAME_RAVENRIDGE2:
-            g_smu.addr_mb_cmd  = 0x3B10A20;
-            g_smu.addr_mb_rsp  = 0x3B10A80;
-            g_smu.addr_mb_args = 0x3B10A88;
-            pr_debug("SMU mailbox 3 selected for use");
+            g_smu.addr_rsmu_mb_cmd  = 0x3B10A20;
+            g_smu.addr_rsmu_mb_rsp  = 0x3B10A80;
+            g_smu.addr_rsmu_mb_args = 0x3B10A88;
+            pr_debug("RSMU mailbox 3 selected for use");
             break;
         default:
             return -ENODEV;
+    }
+
+    // Detect MP1 SMU
+    switch (g_smu.codename) {
+        case CODENAME_COLFAX:
+        case CODENAME_SUMMITRIDGE:
+        case CODENAME_THREADRIPPER:
+        case CODENAME_PINNACLERIDGE:
+            // v9
+            g_smu.addr_mp1_mb_cmd   = 0x3B10528;
+            g_smu.addr_mp1_mb_rsp   = 0x3B10564;
+            g_smu.addr_mp1_mb_args  = 0x3B10598;
+            pr_debug("MP1 mailbox v9 selected for use");
+            break;
+        case CODENAME_PICASSO:
+        case CODENAME_RAVENRIDGE:
+            // v10
+            g_smu.addr_mp1_mb_cmd   = 0x3B10528;
+            g_smu.addr_mp1_mb_rsp   = 0x3B10564;
+            g_smu.addr_mp1_mb_args  = 0x3B10998;
+            pr_debug("MP1 mailbox v10 selected for use");
+            break;
+        case CODENAME_MATISSE:
+        case CODENAME_CASTLEPEAK:
+            // v11
+            g_smu.addr_mp1_mb_cmd   = 0x3B10530;
+            g_smu.addr_mp1_mb_rsp   = 0x3B1057C;
+            g_smu.addr_mp1_mb_args  = 0x3B109C4;
+            pr_debug("MP1 mailbox v11 selected for use");
+            break;
+        case CODENAME_RENOIR:
+        case CODENAME_RAVENRIDGE2:
+            // v12
+            g_smu.addr_mp1_mb_cmd   = 0x3B10528;
+            g_smu.addr_mp1_mb_rsp   = 0x3B10564;
+            g_smu.addr_mp1_mb_args  = 0x3B10998;
+            pr_debug("MP1 mailbox v12 selected for use");
+            break;
+        default:
+            pr_debug("MP1 mailbox undefined for this processor. Disabling.");
+            break;
     }
 
     return 0;
@@ -241,7 +312,7 @@ u32 smu_get_version(struct pci_dev* dev) {
 
     // OP 0x02 is consistent with all platforms meaning
     //  it can be used directly.
-    ret = smu_send_command(dev, 0x02, args, 1);
+    ret = smu_send_command(dev, 0x02, args, 1, TYPE_RSMU);
     if (ret != SMU_Return_OK)
         return ret;
 
@@ -250,6 +321,7 @@ u32 smu_get_version(struct pci_dev* dev) {
 
 u64 smu_get_dram_base_address(struct pci_dev* dev) {
     u32 args[6] = { 0, 0, 0, 0, 0, 0 }, fn[3], ret, parts[2];
+    const enum smu_mailbox type = TYPE_RSMU;
 
     switch (g_smu.codename) {
         case CODENAME_MATISSE:
@@ -277,27 +349,27 @@ u64 smu_get_dram_base_address(struct pci_dev* dev) {
 
 BASE_ADDR_CLASS_1:
     args[0] = args[1] = 1;
-    ret = smu_send_command(dev, fn[0], args, 2);
+    ret = smu_send_command(dev, fn[0], args, 2, type);
 
     return ret != SMU_Return_OK ? ret : args[0] | ((u64)args[1] << 32);
 
 BASE_ADDR_CLASS_2:
-    ret = smu_send_command(dev, fn[0], args, 1);
+    ret = smu_send_command(dev, fn[0], args, 1, type);
     if (ret != SMU_Return_OK)
         return ret;
 
-    ret = smu_send_command(dev, fn[1], args, 1);
+    ret = smu_send_command(dev, fn[1], args, 1, type);
 
     return ret != SMU_Return_OK ? ret : args[0];
 
 BASE_ADDR_CLASS_3:
     args[0] = 3;
-    ret = smu_send_command(dev, fn[0], args, 1);
+    ret = smu_send_command(dev, fn[0], args, 1, type);
     if (ret != SMU_Return_OK)
         return ret;
 
     args[0] = 3;
-    ret = smu_send_command(dev, fn[2], args, 1);
+    ret = smu_send_command(dev, fn[2], args, 1, type);
     if (ret != SMU_Return_OK)
         return ret;
 
@@ -305,17 +377,17 @@ BASE_ADDR_CLASS_3:
     parts[0] = args[0];
 
     args[0] = 3;
-    ret = smu_send_command(dev, fn[1], args, 1);
+    ret = smu_send_command(dev, fn[1], args, 1, type);
     if (ret != SMU_Return_OK)
         return ret;
 
     args[0] = 5;
-    ret = smu_send_command(dev, fn[0], args, 1);
+    ret = smu_send_command(dev, fn[0], args, 1, type);
     if (ret != SMU_Return_OK)
         return ret;
 
     args[0] = 5;
-    ret = smu_send_command(dev, fn[2], args, 1);
+    ret = smu_send_command(dev, fn[2], args, 1, type);
     if (ret != SMU_Return_OK)
         return ret;
 
@@ -351,7 +423,7 @@ enum smu_return_val smu_transfer_table_to_dram(struct pci_dev* dev) {
             return SMU_Return_Unsupported;
     }
 
-    return smu_send_command(dev, fn, args, 1);
+    return smu_send_command(dev, fn, args, 1, TYPE_RSMU);
 }
 
 enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) {
@@ -374,7 +446,7 @@ enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) 
     }
 
     *version = 0;
-    return smu_send_command(dev, fn, version, 1);
+    return smu_send_command(dev, fn, version, 1, TYPE_RSMU);
 }
 
 enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, size_t* len) {

@@ -24,6 +24,14 @@
 #include <pthread.h>
 
 /**
+ * SMU Mailbox Target
+ */
+enum smu_mailbox {
+    TYPE_RSMU,
+    TYPE_MP1,
+};
+
+/**
  * Return values that can be sent from the SMU in response to a command.
  */
 typedef enum {
@@ -90,7 +98,8 @@ typedef struct {
 
     /* Internal Library Use Only */
     int                         fd_smn;
-    int                         fd_smu_cmd;
+    int                         fd_rsmu_cmd;
+    int                         fd_mp1_smu_cmd;
     int                         fd_smu_args;
     int                         fd_pm_table;
 
@@ -128,7 +137,8 @@ smu_return_val smu_write_smn_addr(smu_obj_t* obj, unsigned int address, unsigned
  * 
  * Returns SMU_Return_OK on success.
  */
-smu_return_val smu_send_command(smu_obj_t* obj, unsigned int op, smu_arg_t args);
+smu_return_val smu_send_command(smu_obj_t* obj, unsigned int op, smu_arg_t args,
+    enum smu_mailbox mailbox);
 
 /**
  * Reads the PM table into the destination buffer.

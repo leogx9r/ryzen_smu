@@ -98,14 +98,14 @@ static ssize_t pm_table_size_show(struct kobject *kobj, struct kobj_attribute *a
     return sz;
 }
 
-static ssize_t smu_cmd_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
+static ssize_t rsmu_cmd_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
     ssize_t sz = sizeof(g_driver.smu_rsp);
 
     memcpy(buff, &g_driver.smu_rsp, sz);
     return sz;
 }
 
-static ssize_t smu_cmd_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buff, size_t count) {
+static ssize_t rsmu_cmd_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buff, size_t count) {
     u32 op;
 
     // To date, there has never been a command that actually exceeds FFh
@@ -121,7 +121,34 @@ static ssize_t smu_cmd_store(struct kobject *kobj, struct kobj_attribute *attr, 
             return 0;
     }
 
-    g_driver.smu_rsp = smu_send_command(g_driver.device, op, g_driver.smu_args, 6);
+    g_driver.smu_rsp = smu_send_command(g_driver.device, op, g_driver.smu_args, 6, TYPE_RSMU);
+    return count;
+}
+
+static ssize_t mp1_smu_cmd_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
+    ssize_t sz = sizeof(g_driver.smu_rsp);
+
+    memcpy(buff, &g_driver.smu_rsp, sz);
+    return sz;
+}
+
+static ssize_t mp1_smu_cmd_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buff, size_t count) {
+    u32 op;
+
+    // To date, there has never been a command that actually exceeds FFh
+    //  so 32 bits is overkill but still support it.
+    switch (count) {
+        case sizeof(u32):
+            op = *(u32*)buff;
+            break;
+        case sizeof(u8):
+            op = *(u8*)buff;
+            break;
+        default:
+            return 0;
+    }
+
+    g_driver.smu_rsp = smu_send_command(g_driver.device, op, g_driver.smu_args, 6, TYPE_MP1);
     return count;
 }
 
@@ -181,17 +208,19 @@ __RO_ATTR (pm_table);
 __RO_ATTR (pm_table_size);
 __RO_ATTR (pm_table_version);
 
-__RW_ATTR (smu_cmd);
+__RW_ATTR (rsmu_cmd);
+__RW_ATTR (mp1_smu_cmd);
 __RW_ATTR (smu_args);
 
 __RW_ATTR (smn);
 
-#define MAX_ATTRS_LEN                   9
+#define MAX_ATTRS_LEN                   10
 static struct attribute *drv_attrs[MAX_ATTRS_LEN] = {
     &dev_attr_version.attr,
     &dev_attr_codename.attr,
     &dev_attr_smu_args.attr,
-    &dev_attr_smu_cmd.attr,
+    &dev_attr_rsmu_cmd.attr,
+    &dev_attr_mp1_smu_cmd.attr,
     &dev_attr_smn.attr,
     // PM Table Optional Pointers
     NULL,

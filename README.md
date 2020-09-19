@@ -29,7 +29,8 @@ When loaded, the driver exposes several files under sysfs which can only be read
 - `/sys/kernel/ryzen_smu_drv/version`
 - `/sys/kernel/ryzen_smu_drv/codename`
 - `/sys/kernel/ryzen_smu_drv/smu_args`
-- `/sys/kernel/ryzen_smu_drv/smu_cmd`
+- `/sys/kernel/ryzen_smu_drv/rsmu_cmd`
+- `/sys/kernel/ryzen_smu_drv/mp1_smu_cmd`
 - `/sys/kernel/ryzen_smu_drv/smn`
 
 For supported PM table models, the following files are additionally exposed:
@@ -90,7 +91,8 @@ drwxr-xr-x 14 root root    0 May  7 03:01 ../
 -r--------  1 root root 4.0K May  7 03:12 pm_table_version
 -rw-------  1 root root 4.0K May  7 03:10 smn
 -rw-------  1 root root 4.0K May  7 03:10 smu_args
--rw-------  1 root root 4.0K May  7 03:10 smu_cmd
+-rw-------  1 root root 4.0K May  7 03:10 rsmu_cmd
+-rw-------  1 root root 4.0K May  7 03:10 mp1_smu_cmd
 -r--------  1 root root 4.0K May  7 03:01 version
 
 # cat /sys/kernel/ryzen_smu_drv/version          
@@ -152,9 +154,9 @@ Returns a numeric index containing the running processor's codename based on the
 
 Note: This file returns 2 characters of the decimal encoded index.
 
-#### `/sys/kernel/ryzen_smu_drv/smu_cmd`
+#### `/sys/kernel/ryzen_smu_drv/rsmu_cmd` or `/sys/kernel/ryzen_smu_drv/mp1_smu_cmd`
 
-This file allows the user to initiate an SMU request. It accepts either an 8-bit or 32-bit command ID that is platform-dependent.
+This file allows the user to initiate an RSMU or MP1 SMU request. It accepts either an 8-bit or 32-bit command ID that is platform-dependent.
 
 When this file is read, it produces the result on the status of the operation, as a 32 bit little-endian encoded value:
 

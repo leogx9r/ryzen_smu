@@ -30,7 +30,8 @@
 
 #define SMN_PATH                        DRIVER_CLASS_PATH "smn"
 #define SMU_ARG_PATH                    DRIVER_CLASS_PATH "smu_args"
-#define SMU_CMD_PATH                    DRIVER_CLASS_PATH "smu_cmd"
+#define RSMU_CMD_PATH                   DRIVER_CLASS_PATH "rsmu_cmd"
+#define MP1_SMU_CMD_PATH                DRIVER_CLASS_PATH "mp1_smu_cmd"
 
 #define PM_VERSION_PATH                 DRIVER_CLASS_PATH "pm_table_version"
 #define PM_SIZE_PATH                    DRIVER_CLASS_PATH "pm_table_size"
@@ -118,7 +119,8 @@ int smu_init(smu_obj_t* obj) {
 
     // The driver must provide access to these files.
     if (!try_open_path(SMN_PATH, O_RDWR, &obj->fd_smn) ||
-        !try_open_path(SMU_CMD_PATH, O_RDWR, &obj->fd_smu_cmd) ||
+        !try_open_path(RSMU_CMD_PATH, O_RDWR, &obj->fd_rsmu_cmd) ||
+        !try_open_path(MP1_SMU_CMD_PATH, O_RDWR, &obj->fd_mp1_smu_cmd) ||
         !try_open_path(SMU_ARG_PATH, O_RDWR, &obj->fd_smu_args))
         return SMU_Return_RWError;
 
@@ -141,8 +143,11 @@ void smu_free(smu_obj_t* obj) {
     if (obj->fd_smn)
         close(obj->fd_smn);
 
-    if (obj->fd_smu_cmd)
-        close(obj->fd_smu_cmd);
+    if (obj->fd_rsmu_cmd)
+        close(obj->fd_rsmu_cmd);
+
+    if (obj->fd_mp1_smu_cmd)
+        close(obj->fd_mp1_smu_cmd);
 
     if (obj->fd_smu_args)
         close(obj->fd_smu_args);
@@ -192,8 +197,20 @@ smu_return_val smu_write_smn_addr(smu_obj_t* obj, unsigned int address, unsigned
     return ret == sizeof(buffer) ? SMU_Return_OK : SMU_Return_RWError;
 }
 
-smu_return_val smu_send_command(smu_obj_t* obj, unsigned int op, smu_arg_t args) {
-    unsigned int ret, status;
+smu_return_val smu_send_command(smu_obj_t* obj, unsigned int op, smu_arg_t args,
+    enum smu_mailbox mailbox) {
+    unsigned int ret, status, fd_smu_cmd;
+
+    switch (mailbox) {
+        case TYPE_RSMU:
+            fd_smu_cmd = obj->fd_rsmu_cmd;
+            break;
+        case TYPE_MP1:
+            fd_smu_cmd = obj->fd_mp1_smu_cmd;
+            break;
+        default:
+            return SMU_Return_Unsupported;
+    }
 
     pthread_mutex_lock(&obj->lock[SMU_MUTEX_CMD]);
 
@@ -205,16 +222,16 @@ smu_return_val smu_send_command(smu_obj_t* obj, unsigned int op, smu_arg_t args)
         goto BREAK_OUT;
     }
 
-    lseek(obj->fd_smu_cmd, 0, SEEK_SET);
-    ret = write(obj->fd_smu_cmd, &op, sizeof(op));
+    lseek(fd_smu_cmd, 0, SEEK_SET);
+    ret = write(fd_smu_cmd, &op, sizeof(op));
 
     if (ret != sizeof(op)) {
         ret = SMU_Return_RWError;
         goto BREAK_OUT;
     }
 
-    lseek(obj->fd_smu_cmd, 0, SEEK_SET);
-    ret = read(obj->fd_smu_cmd, &status, sizeof(status));
+    lseek(fd_smu_cmd, 0, SEEK_SET);
+    ret = read(fd_smu_cmd, &status, sizeof(status));
 
     if (ret != sizeof(status))
         ret = SMU_Return_RWError;

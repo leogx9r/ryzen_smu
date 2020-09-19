@@ -76,6 +76,14 @@ enum smu_processor_codename {
     CODENAME_PINNACLERIDGE,
 };
 
+/**
+ * SMU Mailbox Target
+ */
+enum smu_mailbox {
+    TYPE_RSMU,
+    TYPE_MP1,
+};
+
 /* Parameters for SMU execution. */
 extern uint smu_pm_use_timer;
 extern uint smu_pm_update_ms;
@@ -111,7 +119,8 @@ void smu_write_address(struct pci_dev* dev, u32 address, u32 value);
  *
  * Returns an smu_return_val indicating the status of the operation.
  */
-enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32 n_args);
+enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32 n_args,
+    enum smu_mailbox mailbox);
 
 /**
  * Returns the current SMU version.
