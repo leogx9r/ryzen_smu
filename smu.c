@@ -264,6 +264,7 @@ int smu_init(struct pci_dev* dev) {
             break;
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE:
+        case CODENAME_RAVENRIDGE2:
             // v10
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10564;
@@ -279,7 +280,6 @@ int smu_init(struct pci_dev* dev) {
             pr_debug("MP1 mailbox v11 selected for use");
             break;
         case CODENAME_RENOIR:
-        case CODENAME_RAVENRIDGE2:
             // v12
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10564;
