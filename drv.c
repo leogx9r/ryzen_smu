@@ -243,7 +243,11 @@ static int ryzen_smu_get_version(void) {
         return -EINVAL;
     }
 
-    sprintf(g_driver.smu_version, "%d.%d.%d", (ver >> 16) & 0xff, (ver >> 8) & 0xff, ver & 0xff);
+    if (ver & 0xFF000000)
+        sprintf(g_driver.smu_version, "%d.%d.%d.%d", (ver >> 24) & 0xff, (ver >> 16) & 0xff, (ver >> 8) & 0xff, ver & 0xff);
+    else
+        sprintf(g_driver.smu_version, "%d.%d.%d", (ver >> 16) & 0xff, (ver >> 8) & 0xff, ver & 0xff);
+
     pr_info("SMU v%s", g_driver.smu_version);
 
     return 0;
