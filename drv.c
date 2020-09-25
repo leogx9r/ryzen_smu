@@ -226,12 +226,15 @@ static struct attribute *drv_attrs[MAX_ATTRS_LEN] = {
     &dev_attr_codename.attr,
 
     &dev_attr_smu_args.attr,
-    &dev_attr_rsmu_cmd.attr,
     &dev_attr_mp1_smu_cmd.attr,
 
     &dev_attr_smn.attr,
 
     // -- NOTE: Do not edit below here. --
+
+    // RSMU Optional Pointer
+    NULL,
+
     // PM Table Optional Pointers
     NULL,
     NULL,
@@ -245,21 +248,25 @@ static struct attribute_group drv_attr_group = {
     .attrs = drv_attrs,
 };
 
-static int ryzen_smu_get_version(void) {
+static int ryzen_smu_get_version(enum smu_mailbox mb, int show) {
     u32 ver;
 
-    ver = smu_get_version(g_driver.device);
+    ver = smu_get_version(g_driver.device, mb);
     if (ver >= 0 && ver <= 0xFF) {
-        pr_err("Failed to query the SMU version: %d", ver);
+        pr_err("Failed to query the %sSMU version: %d",
+            mb == MAILBOX_TYPE_RSMU ? "R" : "MP1 ", ver);
         return -EINVAL;
     }
 
-    if (ver & 0xFF000000)
-        sprintf(g_driver.smu_version, "%d.%d.%d.%d", (ver >> 24) & 0xff, (ver >> 16) & 0xff, (ver >> 8) & 0xff, ver & 0xff);
-    else
-        sprintf(g_driver.smu_version, "%d.%d.%d", (ver >> 16) & 0xff, (ver >> 8) & 0xff, ver & 0xff);
+    if (show) {
+        if (ver & 0xFF000000)
+            sprintf(g_driver.smu_version, "%d.%d.%d.%d",
+                (ver >> 24) & 0xff, (ver >> 16) & 0xff, (ver >> 8) & 0xff, ver & 0xff);
+        else
+            sprintf(g_driver.smu_version, "%d.%d.%d", (ver >> 16) & 0xff, (ver >> 8) & 0xff, ver & 0xff);
 
-    pr_info("SMU v%s", g_driver.smu_version);
+        pr_info("SMU v%s", g_driver.smu_version);
+    }
 
     return 0;
 }
@@ -280,14 +287,30 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
     if (smu_timeout_attempts < SMU_RETRIES_MIN)
         smu_timeout_attempts = SMU_RETRIES_MIN;
 
+    // Detect processor class & figure out MP1/RSMU support.
     if (smu_init(g_driver.device) != 0) {
         pr_err("Failed to initialize the SMU for use");
         return -ENODEV;
     }
 
-    if (ryzen_smu_get_version() != 0) {
+    // Check if MP1 is working as we guarantee this support.
+    if (ryzen_smu_get_version(MAILBOX_TYPE_MP1, 1) != 0) {
         pr_err("Failed to obtain the SMU version");
         return -EINVAL;
+    }
+
+    // Check if RSMU is valid to determine if to skip PM table setup.
+    if (ryzen_smu_get_version(MAILBOX_TYPE_RSMU, 0) == 0) {
+        // We do something absolutely stupid here and use relative offsets to overwrite offsets
+        //  in the drv_attrs[] array.
+        //
+        // This shouldn't *typically* cause errors unless the array structure is messed with.
+        // So, we left a warning above to not touch it.
+        drv_attrs[MAX_ATTRS_LEN - 5] = &dev_attr_rsmu_cmd.attr;
+    }
+    else {
+        pr_info("RSMU mailbox disabled");
+        goto _CONTINUE_SETUP;
     }
 
     // Check that PM table options are supported before adding it to the attr list
@@ -311,8 +334,6 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
         if (ret == SMU_Return_OK) {
             pr_debug("Probe succeeded: read %ld bytes", g_driver.pm_table_read_size);
 
-            // We do something absolutely stupid here and use relative offsets to overwrite offsets.
-            // This shouldn't *typically* cause errors unless the array structure is messed with.
             drv_attrs[MAX_ATTRS_LEN - 4] = &dev_attr_pm_table_size.attr;
             drv_attrs[MAX_ATTRS_LEN - 3] = &dev_attr_pm_table.attr;
 

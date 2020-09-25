@@ -77,7 +77,14 @@ typedef enum {
     CODENAME_RAVENRIDGE2,
     CODENAME_SUMMITRIDGE,
     CODENAME_PINNACLERIDGE,
-    CODENAME_COUNT,
+
+    // Not yet supported but still added for now.
+    CODENAME_REMBRANT,
+    CODENAME_VANGOGH,
+    CODENAME_CEZANNE,
+    CODENAME_MILAN,
+
+    CODENAME_COUNT
 } smu_processor_codename;
 
 /**

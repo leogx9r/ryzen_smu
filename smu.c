@@ -248,6 +248,12 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_rsmu_mb_args = 0x3B10A88;
             pr_debug("RSMU mailbox 3 selected for use");
             break;
+        case CODENAME_VANGOGH:
+        case CODENAME_REMBRANT:
+        case CODENAME_CEZANNE:
+        case CODENAME_MILAN:
+            pr_debug("RSMU mailbox undefined for this processor. Disabling.");
+            break;
         default:
             return -ENODEV;
     }
@@ -288,9 +294,18 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_mp1_mb_args  = 0x3B10998;
             pr_debug("MP1 mailbox v12 selected for use");
             break;
-        default:
-            pr_debug("MP1 mailbox undefined for this processor. Disabling.");
+        case CODENAME_VANGOGH:
+        case CODENAME_REMBRANT:
+        case CODENAME_CEZANNE:
+        case CODENAME_MILAN:
+            g_smu.mp1_if_ver       = IF_VERSION_13;
+            g_smu.addr_mp1_mb_cmd   = 0x3B10528;
+            g_smu.addr_mp1_mb_rsp   = 0x3b10578;
+            g_smu.addr_mp1_mb_args  = 0x3B10998;
+            pr_debug("MP1 mailbox v13 selected for use");
             break;
+        default:
+            return -ENODEV;
     }
 
     return 0;
@@ -309,12 +324,12 @@ enum smu_processor_codename smu_get_codename(void) {
     return g_smu.codename;
 }
 
-u32 smu_get_version(struct pci_dev* dev) {
+u32 smu_get_version(struct pci_dev* dev, enum smu_mailbox mb) {
     u32 args[6] = { 1, 0, 0, 0, 0, 0 }, ret;
 
     // OP 0x02 is consistent with all platforms meaning
     //  it can be used directly.
-    ret = smu_send_command(dev, 0x02, args, 1, MAILBOX_TYPE_RSMU);
+    ret = smu_send_command(dev, 0x02, args, 1, mb);
     if (ret != SMU_Return_OK)
         return ret;
 

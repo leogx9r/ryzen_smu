@@ -17,6 +17,13 @@ The following processor code names are supported:
 - Summit Ridge
 - Pinnacle Ridge
 
+Initial support has been added for the following processors which is currently disabled:
+
+- Rembrant
+- Vangogh
+- Cezanne
+- Milan
+
 In addition, for the following models, the PM table can also be accessed:
 
 - Matisse
@@ -30,11 +37,11 @@ When loaded, the driver exposes several files under sysfs which can only be read
 - `/sys/kernel/ryzen_smu_drv/mp1_if_version`
 - `/sys/kernel/ryzen_smu_drv/codename`
 - `/sys/kernel/ryzen_smu_drv/smu_args`
-- `/sys/kernel/ryzen_smu_drv/rsmu_cmd`
 - `/sys/kernel/ryzen_smu_drv/mp1_smu_cmd`
 - `/sys/kernel/ryzen_smu_drv/smn`
+- `/sys/kernel/ryzen_smu_drv/rsmu_cmd` (Not present on `Rembrant`, `Vangogh`, `Cezanne` and `Milan`)
 
-For supported PM table models, the following files are additionally exposed:
+For supported PM table models where RSMU is also supported, the following files are additionally exposed:
 
 - `/sys/kernel/ryzen_smu_drv/pm_table_version`
 - `/sys/kernel/ryzen_smu_drv/pm_table_size`
@@ -125,9 +132,9 @@ Everything seems to be working properly!
 
 #### `/sys/kernel/ryzen_smu_drv/version`
 
-Lists the current SMU version in relation to the currently installed [AGESA](https://en.wikipedia.org/wiki/AGESA) BIOS.
+Lists the current SMU firmware version in relation to the currently installed [AGESA](https://en.wikipedia.org/wiki/AGESA).
 
-The following are several lists of SMU to AGESA versions:
+The following are several lists of SMU to AGESA versions for Matisse:
 
 | SMU Version   | AGESA Version |
 |:-------------:|:-------------:|
@@ -171,6 +178,10 @@ Returns a numeric index containing the running processor's codename based on the
 | 08h | 8       | Raven Ridge 2  |
 | 09h | 9       | Summit Ridge   |
 | 0Ah | 10      | Pinnacle Ridge |
+| 0Bh | 11      | Rembrant       |
+| 0Ch | 12      | Vangogh        |
+| 0Dh | 13      | Cezanne        |
+| 0Eh | 14      | Milan          |
 
 Note: This file returns 2 characters of the decimal encoded index.
 

@@ -75,6 +75,12 @@ enum smu_processor_codename {
     CODENAME_SUMMITRIDGE,
     CODENAME_PINNACLERIDGE,
 
+    // Not yet supported but still added for now.
+    CODENAME_REMBRANT,
+    CODENAME_VANGOGH,
+    CODENAME_CEZANNE,
+    CODENAME_MILAN,
+
     CODENAME_COUNT
 };
 
@@ -140,9 +146,9 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
     enum smu_mailbox mailbox);
 
 /**
- * Returns the current SMU version.
+ * Returns the current SMU firmware version from the specified mailbox.
  */
-u32 smu_get_version(struct pci_dev* dev);
+u32 smu_get_version(struct pci_dev* dev, enum smu_mailbox mb);
 
 /**
  * Returns the interface version of the MP1 mailbox.
