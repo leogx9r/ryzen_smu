@@ -20,6 +20,7 @@ The following processor code names are supported:
 Initial support has been added for the following processors which is currently disabled:
 
 - Rembrant
+- Vermeer
 - Vangogh
 - Cezanne
 - Milan
