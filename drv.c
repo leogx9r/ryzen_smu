@@ -72,6 +72,10 @@ static ssize_t version_show(struct kobject *kobj, struct kobj_attribute *attr, c
     return sprintf(buff, "%s\n", g_driver.smu_version);
 }
 
+static ssize_t mp1_if_version_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
+    return sprintf(buff, "%d\n", smu_get_mp1_if_version());
+}
+
 static ssize_t codename_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
     return sprintf(buff, "%02d\n", smu_get_codename());
 }
@@ -121,7 +125,7 @@ static ssize_t rsmu_cmd_store(struct kobject *kobj, struct kobj_attribute *attr,
             return 0;
     }
 
-    g_driver.smu_rsp = smu_send_command(g_driver.device, op, g_driver.smu_args, 6, TYPE_RSMU);
+    g_driver.smu_rsp = smu_send_command(g_driver.device, op, g_driver.smu_args, 6, MAILBOX_TYPE_RSMU);
     return count;
 }
 
@@ -148,7 +152,7 @@ static ssize_t mp1_smu_cmd_store(struct kobject *kobj, struct kobj_attribute *at
             return 0;
     }
 
-    g_driver.smu_rsp = smu_send_command(g_driver.device, op, g_driver.smu_args, 6, TYPE_MP1);
+    g_driver.smu_rsp = smu_send_command(g_driver.device, op, g_driver.smu_args, 6, MAILBOX_TYPE_MP1);
     return count;
 }
 
@@ -202,6 +206,7 @@ static ssize_t smn_store(struct kobject *kobj, struct kobj_attribute *attr, cons
 
 
 __RO_ATTR (version);
+__RO_ATTR (mp1_if_version);
 __RO_ATTR (codename);
 
 __RO_ATTR (pm_table);
@@ -214,18 +219,24 @@ __RW_ATTR (smu_args);
 
 __RW_ATTR (smn);
 
-#define MAX_ATTRS_LEN                   10
+#define MAX_ATTRS_LEN                   11
 static struct attribute *drv_attrs[MAX_ATTRS_LEN] = {
     &dev_attr_version.attr,
+    &dev_attr_mp1_if_version.attr,
     &dev_attr_codename.attr,
+
     &dev_attr_smu_args.attr,
     &dev_attr_rsmu_cmd.attr,
     &dev_attr_mp1_smu_cmd.attr,
+
     &dev_attr_smn.attr,
+
+    // -- NOTE: Do not edit below here. --
     // PM Table Optional Pointers
     NULL,
     NULL,
     NULL,
+
     // Termination Pointer
     NULL,
 };
@@ -258,7 +269,7 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
 
     g_driver.device = dev;
 
-    /* Clamp values. */
+    // Clamp values.
     if (smu_pm_update_ms > PM_TABLE_MAX_UPDATE_TIME_MS)
         smu_pm_update_ms = PM_TABLE_MAX_UPDATE_TIME_MS;
     if (smu_pm_update_ms < PM_TABLE_MIN_UPDATE_TIME_MS)
@@ -299,6 +310,9 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
         ret = smu_read_pm_table(dev, g_driver.pm_table, &g_driver.pm_table_read_size);
         if (ret == SMU_Return_OK) {
             pr_debug("Probe succeeded: read %ld bytes", g_driver.pm_table_read_size);
+
+            // We do something absolutely stupid here and use relative offsets to overwrite offsets.
+            // This shouldn't *typically* cause errors unless the array structure is messed with.
             drv_attrs[MAX_ATTRS_LEN - 4] = &dev_attr_pm_table_size.attr;
             drv_attrs[MAX_ATTRS_LEN - 3] = &dev_attr_pm_table.attr;
 

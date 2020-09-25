@@ -26,6 +26,7 @@
 #define DRIVER_CLASS_PATH               "/sys/kernel/ryzen_smu_drv/"
 
 #define VERSION_PATH                    DRIVER_CLASS_PATH "version"
+#define IF_VERSION_PATH                 DRIVER_CLASS_PATH "mp1_if_version"
 #define CODENAME_PATH                   DRIVER_CLASS_PATH "codename"
 
 #define SMN_PATH                        DRIVER_CLASS_PATH "smn"
@@ -83,6 +84,20 @@ smu_return_val smu_init_parse(smu_obj_t* obj) {
     if (obj->codename <= CODENAME_UNDEFINED ||
         obj->codename >= CODENAME_COUNT)
         return SMU_Return_Unsupported;
+
+    // MP1 version may also be present but only if MP1 is actually enabled.
+    if (try_open_path(IF_VERSION_PATH, O_RDONLY, &tmp_fd)) {
+        // This only specifies an enumeration for the IF version.
+        ret = read(tmp_fd, rd_buf, sizeof(rd_buf));
+        close(tmp_fd);
+
+        if (ret < 0)
+            return SMU_Return_RWError;
+
+        ret = sscanf(rd_buf, "%d\n", &obj->smu_if_version);
+        if (ret == EOF || ret > 3)
+            return SMU_Return_RWError;
+    }
 
     // This file doesn't need to exist if PM Tables aren't supported.
     if (!try_open_path(PM_VERSION_PATH, O_RDONLY, &tmp_fd))

@@ -74,14 +74,31 @@ enum smu_processor_codename {
     CODENAME_RAVENRIDGE2,
     CODENAME_SUMMITRIDGE,
     CODENAME_PINNACLERIDGE,
+
+    CODENAME_COUNT
+};
+
+/**
+ * SMU MP1 Interface Version [v9-v13]
+ */
+enum smu_if_version {
+    IF_VERSION_9,
+    IF_VERSION_10,
+    IF_VERSION_11,
+    IF_VERSION_12,
+    IF_VERSION_13,
+
+    IF_VERSION_COUNT
 };
 
 /**
  * SMU Mailbox Target
  */
 enum smu_mailbox {
-    TYPE_RSMU,
-    TYPE_MP1,
+    MAILBOX_TYPE_RSMU,
+    MAILBOX_TYPE_MP1,
+
+    MAILBOX_TYPE_COUNT
 };
 
 /* Parameters for SMU execution. */
@@ -126,6 +143,11 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
  * Returns the current SMU version.
  */
 u32 smu_get_version(struct pci_dev* dev);
+
+/**
+ * Returns the interface version of the MP1 mailbox.
+ */
+enum smu_if_version smu_get_mp1_if_version(void);
 
 /**
  * Commands the SMU to update the PM table mapped at the DRAM base address.

@@ -17,6 +17,7 @@ static struct {
     u32                            addr_rsmu_mb_rsp;
     u32                            addr_rsmu_mb_args;
 
+    enum smu_if_version            mp1_if_ver;
     u32                            addr_mp1_mb_cmd;
     u32                            addr_mp1_mb_rsp;
     u32                            addr_mp1_mb_args;
@@ -36,6 +37,7 @@ static struct {
     .addr_rsmu_mb_rsp            = 0,
     .addr_rsmu_mb_args           = 0,
 
+    .mp1_if_ver                  = IF_VERSION_COUNT,
     .addr_mp1_mb_cmd             = 0,
     .addr_mp1_mb_rsp             = 0,
     .addr_mp1_mb_args            = 0,
@@ -77,12 +79,12 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
 
     // == Pick the correct mailbox address. ==
     switch (mailbox) {
-        case TYPE_RSMU:
+        case MAILBOX_TYPE_RSMU:
             rsp_addr = g_smu.addr_rsmu_mb_rsp;
             cmd_addr = g_smu.addr_rsmu_mb_cmd;
             args_addr = g_smu.addr_rsmu_mb_args;
             break;
-        case TYPE_MP1:
+        case MAILBOX_TYPE_MP1:
             rsp_addr = g_smu.addr_mp1_mb_rsp;
             cmd_addr = g_smu.addr_mp1_mb_cmd;
             args_addr = g_smu.addr_mp1_mb_args;
@@ -256,7 +258,7 @@ int smu_init(struct pci_dev* dev) {
         case CODENAME_SUMMITRIDGE:
         case CODENAME_THREADRIPPER:
         case CODENAME_PINNACLERIDGE:
-            // v9
+            g_smu.mp1_if_ver        = IF_VERSION_9;
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10564;
             g_smu.addr_mp1_mb_args  = 0x3B10598;
@@ -265,7 +267,7 @@ int smu_init(struct pci_dev* dev) {
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE:
         case CODENAME_RAVENRIDGE2:
-            // v10
+            g_smu.mp1_if_ver        = IF_VERSION_10;
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10564;
             g_smu.addr_mp1_mb_args  = 0x3B10998;
@@ -273,14 +275,14 @@ int smu_init(struct pci_dev* dev) {
             break;
         case CODENAME_MATISSE:
         case CODENAME_CASTLEPEAK:
-            // v11
+            g_smu.mp1_if_ver        = IF_VERSION_11;
             g_smu.addr_mp1_mb_cmd   = 0x3B10530;
             g_smu.addr_mp1_mb_rsp   = 0x3B1057C;
             g_smu.addr_mp1_mb_args  = 0x3B109C4;
             pr_debug("MP1 mailbox v11 selected for use");
             break;
         case CODENAME_RENOIR:
-            // v12
+            g_smu.mp1_if_ver        = IF_VERSION_12;
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10564;
             g_smu.addr_mp1_mb_args  = 0x3B10998;
@@ -312,16 +314,20 @@ u32 smu_get_version(struct pci_dev* dev) {
 
     // OP 0x02 is consistent with all platforms meaning
     //  it can be used directly.
-    ret = smu_send_command(dev, 0x02, args, 1, TYPE_RSMU);
+    ret = smu_send_command(dev, 0x02, args, 1, MAILBOX_TYPE_RSMU);
     if (ret != SMU_Return_OK)
         return ret;
 
     return args[0];
 }
 
+enum smu_if_version smu_get_mp1_if_version(void) {
+    return g_smu.mp1_if_ver;
+}
+
 u64 smu_get_dram_base_address(struct pci_dev* dev) {
     u32 args[6] = { 0, 0, 0, 0, 0, 0 }, fn[3], ret, parts[2];
-    const enum smu_mailbox type = TYPE_RSMU;
+    const enum smu_mailbox type = MAILBOX_TYPE_RSMU;
 
     switch (g_smu.codename) {
         case CODENAME_MATISSE:
@@ -423,7 +429,7 @@ enum smu_return_val smu_transfer_table_to_dram(struct pci_dev* dev) {
             return SMU_Return_Unsupported;
     }
 
-    return smu_send_command(dev, fn, args, 1, TYPE_RSMU);
+    return smu_send_command(dev, fn, args, 1, MAILBOX_TYPE_RSMU);
 }
 
 enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) {
@@ -446,7 +452,7 @@ enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) 
     }
 
     *version = 0;
-    return smu_send_command(dev, fn, version, 1, TYPE_RSMU);
+    return smu_send_command(dev, fn, version, 1, MAILBOX_TYPE_RSMU);
 }
 
 enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, size_t* len) {

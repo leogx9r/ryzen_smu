@@ -80,6 +80,22 @@ typedef enum {
     CODENAME_COUNT,
 } smu_processor_codename;
 
+/**
+ * SMU MP1 Interface Version [v9-v13]
+ */
+typedef enum {
+    IF_VERSION_9,
+    IF_VERSION_10,
+    IF_VERSION_11,
+    IF_VERSION_12,
+    IF_VERSION_13,
+
+    IF_VERSION_COUNT
+} smu_if_version;
+
+/**
+ * Mutex lock enumeration for specific components.
+ */
 enum SMU_MUTEX_LOCK {
     SMU_MUTEX_SMN,
     SMU_MUTEX_CMD,
@@ -92,6 +108,7 @@ typedef struct {
     int                         init;
 
     smu_processor_codename      codename;
+    smu_if_version              smu_if_version;
     int                         smu_version;
     int                         pm_table_size;
     int                         pm_table_version;

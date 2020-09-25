@@ -27,6 +27,7 @@ In addition, for the following models, the PM table can also be accessed:
 When loaded, the driver exposes several files under sysfs which can only be read with root permissions (for obvious reasons):
 
 - `/sys/kernel/ryzen_smu_drv/version`
+- `/sys/kernel/ryzen_smu_drv/mp1_if_version`
 - `/sys/kernel/ryzen_smu_drv/codename`
 - `/sys/kernel/ryzen_smu_drv/smu_args`
 - `/sys/kernel/ryzen_smu_drv/rsmu_cmd`
@@ -86,17 +87,21 @@ total 0
 drwxr-xr-x  2 root root    0 May  7 03:01 ./
 drwxr-xr-x 14 root root    0 May  7 03:01 ../
 -r--------  1 root root 4.0K May  7 03:12 codename
+-r--------  1 root root 4.0K May  7 03:10 mp1_if_version
+-rw-------  1 root root 4.0K May  7 03:10 mp1_smu_cmd
 -r--------  1 root root 4.0K May  7 03:12 pm_table
 -r--------  1 root root 4.0K May  7 03:12 pm_table_size
 -r--------  1 root root 4.0K May  7 03:12 pm_table_version
+-rw-------  1 root root 4.0K May  7 03:10 rsmu_cmd
 -rw-------  1 root root 4.0K May  7 03:10 smn
 -rw-------  1 root root 4.0K May  7 03:10 smu_args
--rw-------  1 root root 4.0K May  7 03:10 rsmu_cmd
--rw-------  1 root root 4.0K May  7 03:10 mp1_smu_cmd
 -r--------  1 root root 4.0K May  7 03:01 version
 
 # cat /sys/kernel/ryzen_smu_drv/version          
 SMU v46.54.0
+
+# cat /sys/kernel/ryzen_smu_drv/mp1_if_version
+2
 
 # cat /sys/kernel/ryzen_smu_drv/codename
 4
@@ -133,6 +138,21 @@ The following are several lists of SMU to AGESA versions:
 | 43.18         | 1.0.0.2 A     |
 
 Note: This file returns a string encoded version represented by the "SMU Version" above.
+
+#### `/sys/kernel/ryzen_smu_drv/mp1_if_version`
+
+Lists the interface version for the MP1 mailbox.
+
+This can range from v9 to v13 and is indicated by the following table:
+
+| Value | Interface Version |
+|:-----:|:-----------------:|
+| 0     | v9                |
+| 1     | v10               |
+| 2     | v11               |
+| 3     | v12               |
+| 4     | v13               |
+| 5     | Undefined         |
 
 #### `/sys/kernel/ryzen_smu_drv/codename`
 
