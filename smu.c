@@ -280,6 +280,7 @@ int smu_init(struct pci_dev* dev) {
             pr_debug("MP1 mailbox v10 selected for use");
             break;
         case CODENAME_MATISSE:
+        case CODENAME_VERMEER:
         case CODENAME_CASTLEPEAK:
             g_smu.mp1_if_ver        = IF_VERSION_11;
             g_smu.addr_mp1_mb_cmd   = 0x3B10530;

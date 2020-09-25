@@ -179,9 +179,10 @@ Returns a numeric index containing the running processor's codename based on the
 | 09h | 9       | Summit Ridge   |
 | 0Ah | 10      | Pinnacle Ridge |
 | 0Bh | 11      | Rembrant       |
-| 0Ch | 12      | Vangogh        |
-| 0Dh | 13      | Cezanne        |
-| 0Eh | 14      | Milan          |
+| 0Ch | 12      | Vermeer        |
+| 0Dh | 13      | Vangogh        |
+| 0Eh | 14      | Cezanne        |
+| 0Fh | 15      | Milan          |
 
 Note: This file returns 2 characters of the decimal encoded index.
 

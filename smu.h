@@ -77,6 +77,7 @@ enum smu_processor_codename {
 
     // Not yet supported but still added for now.
     CODENAME_REMBRANT,
+    CODENAME_VERMEER,
     CODENAME_VANGOGH,
     CODENAME_CEZANNE,
     CODENAME_MILAN,
