@@ -341,7 +341,7 @@ void start_pm_monitor(int force) {
         total_voltage, average_voltage, core_sleep_time, edc_used;
 
     const char* name, *codename;
-    unsigned int cores, ccds, i;
+    unsigned int cores, ccds, if_ver, i;
     ppm_table_0x240903 pmt;
     unsigned char *pm_buf;
 
@@ -355,13 +355,34 @@ void start_pm_monitor(int force) {
         exit(0);
     }
 
-    name = get_processor_name();
+    name     = get_processor_name();
     codename = smu_codename_to_str(&obj);
-    cores = get_processor_cores();
-    ccds = get_processor_ccds();
+    cores    = get_processor_cores();
+    ccds     = get_processor_ccds();
 
     pm_buf = calloc(obj.pm_table_size, sizeof(unsigned char));
     pmt = (ppm_table_0x240903)pm_buf;
+
+    switch (obj.smu_if_version) {
+        case IF_VERSION_9:
+            if_ver = 9;
+            break;
+        case IF_VERSION_10:
+            if_ver = 10;
+            break;
+        case IF_VERSION_11:
+            if_ver = 11;
+            break;
+        case IF_VERSION_12:
+            if_ver = 12;
+            break;
+        case IF_VERSION_13:
+            if_ver = 13;
+            break;
+        default:
+            if_ver = 0;
+            break;
+    }
 
     while(1) {
         if (smu_read_pm_table(&obj, pm_buf, obj.pm_table_size) != SMU_Return_OK)
@@ -370,7 +391,7 @@ void start_pm_monitor(int force) {
         fprintf(stdout, "\e[1;1H\e[2J");
 
         fprintf(stdout, "=====================  CPU INFO  =====================\n");
-        fprintf(stdout, "Model: %s\nCode Name: %s\nCCD(s): %d | Core(s): %d\n", name, codename, ccds, cores);
+        fprintf(stdout, "Model: %s\nCode Name: %s\nCCD(s): %d | Core(s): %d | IF: v%d\n", name, codename, ccds, cores, if_ver);
 
         total_usage = total_voltage = peak_core_frequency = 0;
 
