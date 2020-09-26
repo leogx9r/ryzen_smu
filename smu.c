@@ -118,7 +118,7 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
     // Step 3: Write the argument(s) into the argument register(s)
     for (i = 0; i < 6; i++) {
         tmp = i >= n_args ? 0 : args[i];
-        smu_write_address(dev, g_smu.addr_rsmu_mb_args + (i * 4), tmp);
+        smu_write_address(dev, args_addr + (i * 4), tmp);
     }
 
     // Step 4: Write the message Id into the Message ID register
