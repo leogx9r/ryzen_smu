@@ -430,14 +430,18 @@ enum smu_return_val smu_transfer_table_to_dram(struct pci_dev* dev) {
 
     switch (g_smu.codename) {
         case CODENAME_MATISSE:
+            // Arg: PpTable
+            args[0] = 0;
             fn = 0x05;
             break;
         case CODENAME_RENOIR:
+            // Arg: PmStatusLogTable
             args[0] = 3;
             fn = 0x65;
             break;
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE2:
+            // Arg: PmStatusLogTable
             args[0] = 3;
             fn = 0x3d;
             break;
