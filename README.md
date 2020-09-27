@@ -135,7 +135,7 @@ Everything seems to be working properly!
 
 Lists the current SMU firmware version in relation to the currently installed [AGESA](https://en.wikipedia.org/wiki/AGESA).
 
-The following are several lists of SMU to AGESA versions for Matisse:
+The following are several lists of SMU to AGESA versions for Matisse on the ComboPiAM4 (Pre-X570/B550):
 
 | SMU Version   | AGESA Version |
 |:-------------:|:-------------:|
@@ -162,6 +162,8 @@ This can range from v9 to v13 and is indicated by the following table:
 | 4     | v13               |
 | 5     | Undefined         |
 
+Note: This file returns a string representation of the "Value" field above.
+
 #### `/sys/kernel/ryzen_smu_drv/codename`
 
 Returns a numeric index containing the running processor's codename based on the following enumeration:
@@ -185,7 +187,7 @@ Returns a numeric index containing the running processor's codename based on the
 | 0Eh | 14      | Cezanne        |
 | 0Fh | 15      | Milan          |
 
-Note: This file returns 2 characters of the decimal encoded index.
+Note: This file returns 2 characters of the 'Decimal' encoded index.
 
 #### `/sys/kernel/ryzen_smu_drv/rsmu_cmd` or `/sys/kernel/ryzen_smu_drv/mp1_smu_cmd`
 
@@ -241,8 +243,6 @@ On supported platforms, which are Matisse and Renoir systems, this lists the ver
 
 The following table lists the known characteristics per version:
 
-Note: File is a 32 bit word encoded in little-endian binary order.
-
 | Hex      | Platform | Table Size (Hex) |
 |:--------:|:--------:|:----------------:|
 | 0x240902 | Matisse  | 0x514            |
@@ -253,9 +253,13 @@ Note: File is a 32 bit word encoded in little-endian binary order.
 | 0x370001 | Renoir   | 0x884            |
 | 0x370002 | Renoir   | 0x88C            |
 
+Note: File is a 32 bit word encoded in little-endian binary order.
+
 #### `/sys/kernel/ryzen_smu_drv/pm_table`
 
 On supported platforms, this file contains the PM table for the processor, as updated by the SMU.
+
+Note: This file is encoded directly by the SMU and contains an array of 32-bit floating point values whose structure is determined by the version of the table.
 
 ## Module Parameters
 
@@ -272,3 +276,26 @@ For example, on slower or busy systems, the SMU may be tied up resulting in comm
 When the `pm_table` file is read, the driver first checks for how long since the PM table was last updated, and if it exceeds `smu_pm_update_ms`, the SMU is first told to update the contents before the table is shown.
 
 Accepted ranges are in milliseconds, between `50` and `60000`, defaulting to `1000`. It is generally a good idea to leave this at its default value.
+
+## Example Usage
+
+For Matisse processors, there are several commands that are known to work:
+
+```sh
+# Note: Does not persist across reboots
+
+# Set the running PPT to 142 W (argument in milliwatts)
+printf '%0*x' 48 142000 | fold -w 2 | tac | tr -d '\n' | xxd -r -p | sudo tee /sys/kernel/ryzen_smu_drv/smu_args && printf '\x53' | sudo tee /sys/kernel/ryzen_smu_drv/rsmu_cmd
+
+# Set the running TDC to 90 A (argument in milliamps)
+printf '%0*x' 48 90000 | fold -w 2 | tac | tr -d '\n' | xxd -r -p | sudo tee /sys/kernel/ryzen_smu_drv/smu_args && printf '\x54' | sudo tee /sys/kernel/ryzen_smu_drv/rsmu_cmd
+
+# Set the running EDC to 140 A (argument in milliamps)
+printf '%0*x' 48 140000 | fold -w 2 | tac | tr -d '\n' | xxd -r -p | sudo tee /sys/kernel/ryzen_smu_drv/smu_args && printf '\x55' | sudo tee /sys/kernel/ryzen_smu_drv/rsmu_cmd
+
+# Set the PBO Scalar to 2x
+# Calculation: 1000 - (scalar * 100)
+printf '%0*x' 48 800 | fold -w 2 | tac | tr -d '\n' | xxd -r -p | sudo tee /sys/kernel/ryzen_smu_drv/smu_args && printf '\x58' | sudo tee /sys/kernel/ryzen_smu_drv/rsmu_cmd
+```
+
+As to the rest of the commands, we leave that as an exercise up to the user. :)
