@@ -24,6 +24,7 @@
 #include <cpuid.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -525,12 +526,32 @@ void parse_args(int argc, char** argv) {
     start_pm_monitor(force);
 }
 
+void signal_interrupt(int sig) {
+    switch (sig) {
+        case SIGINT:
+        case SIGABRT:
+        case SIGTERM:
+            // Re-enable the cursor.
+            fprintf(stdout, "\e[?25h");
+            exit(0);
+        default:
+            break;
+    }
+}
+
 int main(int argc, char** argv) {
     smu_return_val ret;
 
+    if ((signal(SIGABRT, signal_interrupt) == SIG_ERR) ||
+        (signal(SIGTERM, signal_interrupt) == SIG_ERR) ||
+        (signal(SIGINT, signal_interrupt) == SIG_ERR)) {
+        fprintf(stderr, "Can't set up signal hooks.\n");
+        exit(-1);
+    }
+
     if (getuid() != 0 && geteuid() != 0) {
         fprintf(stderr, "Program must be run as root.\n");
-        exit(-1);
+        exit(-2);
     }
 
     ret = smu_init(&obj);
