@@ -341,6 +341,16 @@ const char* smu_codename_to_str(smu_obj_t* obj) {
             return "Summit Ridge";
         case CODENAME_THREADRIPPER:
             return "Thread Ripper";
+        case CODENAME_REMBRANT:
+            return "Rembrant";
+        case CODENAME_VERMEER:
+            return "Vermeer";
+        case CODENAME_VANGOGH:
+            return "Van Gogh";
+        case CODENAME_CEZANNE:
+            return "Cezanne";
+        case CODENAME_MILAN:
+            return "Milan";
         default:
             return "Undefined";
     }
