@@ -30,6 +30,14 @@ MODULE_LICENSE("GPL");
     #error "Unsupported kernel version. Minimum: v4.19"
 #endif
 
+#define __RO_ATTR(attr) \
+    static struct kobj_attribute dev_attr_##attr = \
+        __ATTR(attr, S_IRUSR, attr##_show, attr_store_null);
+
+#define __RW_ATTR(attr) \
+    static struct kobj_attribute dev_attr_##attr = \
+        __ATTR(attr, S_IRUSR | S_IWUSR, attr##_show, attr##_store);
+
 static struct ryzen_smu_data {
     struct pci_dev*         device;
     struct kobject*         drv_kobj;
@@ -57,6 +65,50 @@ static struct ryzen_smu_data {
     .pm_table             = NULL,
     .pm_table_version     = 0,
     .pm_table_read_size   = PM_TABLE_MAX_SIZE,
+};
+
+
+__RO_ATTR (version);
+__RO_ATTR (mp1_if_version);
+__RO_ATTR (codename);
+
+__RO_ATTR (pm_table);
+__RO_ATTR (pm_table_size);
+__RO_ATTR (pm_table_version);
+
+__RW_ATTR (rsmu_cmd);
+__RW_ATTR (mp1_smu_cmd);
+__RW_ATTR (smu_args);
+
+__RW_ATTR (smn);
+
+#define MAX_ATTRS_LEN                   11
+static struct attribute *drv_attrs[MAX_ATTRS_LEN] = {
+    &dev_attr_version.attr,
+    &dev_attr_mp1_if_version.attr,
+    &dev_attr_codename.attr,
+
+    &dev_attr_smu_args.attr,
+    &dev_attr_mp1_smu_cmd.attr,
+
+    &dev_attr_smn.attr,
+
+    // -- NOTE: Do not edit below here. --
+
+    // RSMU Optional Pointer
+    NULL,
+
+    // PM Table Optional Pointers
+    NULL,
+    NULL,
+    NULL,
+
+    // Termination Pointer
+    NULL,
+};
+
+static struct attribute_group drv_attr_group = {
+    .attrs = drv_attrs,
 };
 
 /* SMU Command Parameters. */
@@ -195,58 +247,6 @@ static ssize_t smn_store(struct kobject *kobj, struct kobj_attribute *attr, cons
 
     return count;
 }
-
-#define __RO_ATTR(attr) \
-    static struct kobj_attribute dev_attr_##attr = \
-        __ATTR(attr, S_IRUSR, attr##_show, attr_store_null);
-
-#define __RW_ATTR(attr) \
-    static struct kobj_attribute dev_attr_##attr = \
-        __ATTR(attr, S_IRUSR | S_IWUSR, attr##_show, attr##_store);
-
-
-__RO_ATTR (version);
-__RO_ATTR (mp1_if_version);
-__RO_ATTR (codename);
-
-__RO_ATTR (pm_table);
-__RO_ATTR (pm_table_size);
-__RO_ATTR (pm_table_version);
-
-__RW_ATTR (rsmu_cmd);
-__RW_ATTR (mp1_smu_cmd);
-__RW_ATTR (smu_args);
-
-__RW_ATTR (smn);
-
-#define MAX_ATTRS_LEN                   11
-static struct attribute *drv_attrs[MAX_ATTRS_LEN] = {
-    &dev_attr_version.attr,
-    &dev_attr_mp1_if_version.attr,
-    &dev_attr_codename.attr,
-
-    &dev_attr_smu_args.attr,
-    &dev_attr_mp1_smu_cmd.attr,
-
-    &dev_attr_smn.attr,
-
-    // -- NOTE: Do not edit below here. --
-
-    // RSMU Optional Pointer
-    NULL,
-
-    // PM Table Optional Pointers
-    NULL,
-    NULL,
-    NULL,
-
-    // Termination Pointer
-    NULL,
-};
-
-static struct attribute_group drv_attr_group = {
-    .attrs = drv_attrs,
-};
 
 static int ryzen_smu_get_version(enum smu_mailbox mb, int show) {
     u32 ver;
