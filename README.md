@@ -16,9 +16,6 @@ The following processor code names are supported:
 - Raven Ridge 2
 - Summit Ridge
 - Pinnacle Ridge
-
-Initial support has been added for the following processors which is currently disabled:
-
 - Rembrant
 - Vermeer
 - Vangogh

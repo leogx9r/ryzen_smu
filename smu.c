@@ -147,12 +147,12 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
 }
 
 int smu_resolve_cpu_class(struct pci_dev* dev) {
-    u32 e_model, pkg_type;
+    u32 cpuid, e_model, pkg_type;
 
     // Combines BaseModel + ExtModel + ExtFamily + Reserved
     // See: CPUID_Fn00000001_EAX
-    e_model = cpuid_eax(0x00000001);
-    e_model = ((e_model & 0xff) >> 4) + ((e_model >> 12) & 0xf0);
+    cpuid = cpuid_eax(0x00000001);
+    e_model = ((cpuid & 0xff) >> 4) + ((cpuid >> 12) & 0xf0);
 
     // Combines "PkgType" and "Reserved"
     // See: CPUID_Fn80000001_EBX
@@ -206,9 +206,25 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
     }
     else if (e_model <= 0x1F && pkg_type == 2)
         g_smu.codename = CODENAME_RAVENRIDGE;
-    else {
-        pr_err("cpuid: failed to detect processor codename (4)");
-        return -4;
+    else switch(cpuid) {
+        case 0x00A20F10:
+            g_smu.codename = CODENAME_VERMEER;
+            break;
+        case 0x00A50F01:
+            g_smu.codename = CODENAME_CEZANNE;
+            break;
+        case 0x00A40F00:
+            g_smu.codename = CODENAME_REMBRANT;
+            break;
+        case 0x00890F00:
+            g_smu.codename = CODENAME_VANGOGH;
+            break;
+        case 0x00A00F11:
+            g_smu.codename = CODENAME_MILAN;
+            break;
+        default:
+            pr_err("cpuid: failed to detect processor codename (4)");
+            return -4;
     }
 
     return 0;
