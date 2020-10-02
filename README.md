@@ -2,7 +2,8 @@
 
 ![Ryzen SMU Capabilities](pics/preview.jpg)
 
-*Ryzen SMU* is a Linux kernel driver that exposes access to the SMU (System Management Unit) for certain AMD Ryzen Processors.
+*Ryzen SMU* is a Linux kernel driver that exposes access to the SMU (System Management Unit) for
+certain AMD Ryzen Processors.
 
 The following processor code names are supported:
 
@@ -29,7 +30,8 @@ In addition, for the following models, the PM table can also be accessed:
 - Picasso
 - Raven Ridge 2
 
-When loaded, the driver exposes several files under sysfs which can only be read with root permissions (for obvious reasons):
+When loaded, the driver exposes several files under sysfs which can only be read with root
+permissions (for obvious reasons):
 
 - `/sys/kernel/ryzen_smu_drv/version`
 - `/sys/kernel/ryzen_smu_drv/mp1_if_version`
@@ -39,7 +41,8 @@ When loaded, the driver exposes several files under sysfs which can only be read
 - `/sys/kernel/ryzen_smu_drv/smn`
 - `/sys/kernel/ryzen_smu_drv/rsmu_cmd` (Not present on `Rembrant`, `Vangogh`, `Cezanne` and `Milan`)
 
-For supported PM table models where RSMU is also supported, the following files are additionally exposed:
+For supported PM table models where RSMU is also supported, the following files are additionally 
+exposed:
 
 - `/sys/kernel/ryzen_smu_drv/pm_table_version`
 - `/sys/kernel/ryzen_smu_drv/pm_table_size`
@@ -113,7 +116,8 @@ SMU v46.54.0
 
 ```
 
-Following which, you can run the [test.py script](scripts/test.py) to verify that SMU and SMN functionality is working:
+Following which, you can run the [test.py script](scripts/test.py) to verify that SMU and SMN
+functionality is working:
 
 ```
 # python3 scripts/test.py
@@ -130,9 +134,11 @@ Everything seems to be working properly!
 
 #### `/sys/kernel/ryzen_smu_drv/version`
 
-Lists the current SMU firmware version in relation to the currently installed [AGESA](https://en.wikipedia.org/wiki/AGESA).
+Lists the current SMU firmware version in relation to the currently installed
+[AGESA](https://en.wikipedia.org/wiki/AGESA).
 
-The following are several lists of SMU to AGESA versions for Matisse on the ComboPiAM4 (Pre-X570/B550):
+The following are several lists of SMU to AGESA versions for Matisse on the ComboPiAM4
+(Pre-X570/B550):
 
 | SMU Version   | AGESA Version |
 |:-------------:|:-------------:|
@@ -163,7 +169,8 @@ Note: This file returns a string representation of the "Value" field above.
 
 #### `/sys/kernel/ryzen_smu_drv/codename`
 
-Returns a numeric index containing the running processor's codename based on the following enumeration:
+Returns a numeric index containing the running processor's codename based on the following
+enumeration:
 
 | Hex | Decimal | Code Name      |
 |:---:|:-------:|:--------------:|
@@ -188,9 +195,11 @@ Note: This file returns 2 characters of the 'Decimal' encoded index.
 
 #### `/sys/kernel/ryzen_smu_drv/rsmu_cmd` or `/sys/kernel/ryzen_smu_drv/mp1_smu_cmd`
 
-This file allows the user to initiate an RSMU or MP1 SMU request. It accepts either an 8-bit or 32-bit command ID that is platform-dependent.
+This file allows the user to initiate an RSMU or MP1 SMU request. It accepts either an 8-bit or
+32-bit command ID that is platform-dependent.
 
-When this file is read, it produces the result on the status of the operation, as a 32 bit little-endian encoded value:
+When this file is read, it produces the result on the status of the operation, as a 32 bit
+little-endian encoded value:
 
 | Hex | Decimal | Explanation                   |
 |:---:|:-------:|:-----------------------------:|
@@ -206,18 +215,21 @@ When this file is read, it produces the result on the status of the operation, a
 
 #### `/sys/kernel/ryzen_smu_drv/smu_args`
 
-When written to, this file accepts 6x 32-bit words (a total of 192 bits) that specify the arguments used when executing an SMU command.
+When written to, this file accepts 6x 32-bit words (a total of 192 bits) that specify the arguments
+used when executing an SMU command.
 
 When read from, it lists either:
 
 - The last values that were written to it before an SMU request was initiated
 - The responses from the SMU after a request was completed
 
-Note: All values sent to and read from this file must be in 6x 32-bit words encoded in little-endian order, arguments numbered from 1 to 6.
+Note: All values sent to and read from this file must be in 6x 32-bit words encoded in little-endian
+order, arguments numbered from 1 to 6.
 
 #### `/sys/kernel/ryzen_smu_drv/smn`
 
-Allows reading and writing 32 bit values from the SMN address space. To perform an operation, write a value then read the file for the result.
+Allows reading and writing 32 bit values from the SMN address space. To perform an operation, write
+a value then read the file for the result.
 
 The amount of bytes written indicates the operation performed:
 
@@ -230,7 +242,8 @@ Note: All values sent to and read from the device must are in little-endian bina
 
 #### `/sys/kernel/ryzen_smu_drv/pm_table_size`
 
-On supported platforms, this lists the maximum size of the `/sys/kernel/ryzen_smu_drv/pm_table` file, in bytes.
+On supported platforms, this lists the maximum size of the `/sys/kernel/ryzen_smu_drv/pm_table`
+file, in bytes.
 
 Note: File is a 64 bit word encoded in little-endian binary order.
 
@@ -256,7 +269,8 @@ Note: File is a 32 bit word encoded in little-endian binary order.
 
 On supported platforms, this file contains the PM table for the processor, as updated by the SMU.
 
-Note: This file is encoded directly by the SMU and contains an array of 32-bit floating point values whose structure is determined by the version of the table.
+Note: This file is encoded directly by the SMU and contains an array of 32-bit floating point values
+whose structure is determined by the version of the table.
 
 ## Module Parameters
 
@@ -264,15 +278,20 @@ The driver supports the following module parameters:
 
 #### `smu_timeout_attempts`
 
-When executing an SMU command, either by reading `pm_table` or manually, via `smu_args` and `smu_cmd`, the driver will retry this many times before considering the command to have timed out.
+When executing an SMU command, either by reading `pm_table` or manually, via `smu_args` and
+`smu_cmd`, the driver will retry this many times before considering the command to have timed out.
 
-For example, on slower or busy systems, the SMU may be tied up resulting in commands taking longer to execute than normal. Allowed range is from `500` to `32768`, defaulting to `8192`.
+For example, on slower or busy systems, the SMU may be tied up resulting in commands taking longer
+to execute than normal. Allowed range is from `500` to `32768`, defaulting to `8192`.
 
 #### `smu_pm_update_ms`
 
-When the `pm_table` file is read, the driver first checks for how long since the PM table was last updated, and if it exceeds `smu_pm_update_ms`, the SMU is first told to update the contents before the table is shown.
+When the `pm_table` file is read, the driver first checks for how long since the PM table was last
+updated, and if it exceeds `smu_pm_update_ms`, the SMU is first told to update the contents before
+the table is shown.
 
-Accepted ranges are in milliseconds, between `50` and `60000`, defaulting to `1000`. It is generally a good idea to leave this at its default value.
+Accepted ranges are in milliseconds, between `50` and `60000`, defaulting to `1000`. It is generally
+a good idea to leave this at its default value.
 
 ## Example Usage
 

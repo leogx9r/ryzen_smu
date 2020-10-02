@@ -188,7 +188,8 @@ static ssize_t smn_show(struct kobject *kobj, struct kobj_attribute *attr, char 
     return sz;
 }
 
-static ssize_t smn_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buff, size_t count) {
+static ssize_t smn_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buff,
+size_t count) {
     switch (count) {
         case sizeof(u32):
             // One word written means we read this address at buff[0]
@@ -319,13 +320,14 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
     if (ret == SMU_Return_OK) {
         ret = smu_get_pm_table_version(g_driver.device, &g_driver.pm_table_version);
         if (ret != SMU_Return_OK && ret != SMU_Return_Unsupported) {
-            pr_err("Unable to resolve which PM table version the system uses -- disabling feature (%d)", ret);
+            pr_err("Unable to resolve which PM table version the system uses -- disabling "
+            "feature (%d)", ret);
             goto _CONTINUE_SETUP;
         }
 
         g_driver.pm_table = kzalloc(PM_TABLE_MAX_SIZE, GFP_KERNEL);
         if (g_driver.pm_table == NULL) {
-            pr_err("Unable to allocate kernel buffer for PM table mapping -- disabling PM table feature");
+            pr_err("Unable to allocate kernel buffer for PM table mapping -- disabling PM table " "feature");
             goto _CONTINUE_SETUP;
         }
 
