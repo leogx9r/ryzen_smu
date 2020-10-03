@@ -64,18 +64,18 @@ smu_return_val smu_init_parse(smu_obj_t* obj) {
         return SMU_Return_RWError;
 
     len = strlen(rd_buf);
-    for (i = 0, c = 0; i < rd_buf; i++)
+    for (i = 0, c = 0; i < len; i++)
         if (rd_buf[i] == '.')
             c++;
 
     // Depending on the processor, there can be either a 3 or 4 part segment.
     // We account for both
     switch (c) {
-        case 3:
+        case 2:
             ret = sscanf(rd_buf, "%d.%d.%d\n", &ver_maj, &ver_min, &ver_rev);
             obj->smu_version = ver_maj << 16 | ver_min << 8 | ver_rev;
             break;
-        case 4:
+        case 3:
             ret = sscanf(rd_buf, "%d.%d.%d.%d\n", &ver_maj, &ver_min, &ver_rev, &ver_alt);
             obj->smu_version = ver_maj << 24 | ver_min << 16 | ver_rev << 8 | ver_alt;
             break;
