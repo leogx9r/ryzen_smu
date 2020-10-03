@@ -47,7 +47,7 @@ int try_open_path(const char* pathname, int mode, int* fd) {
 }
 
 smu_return_val smu_init_parse(smu_obj_t* obj) {
-    int ver_maj, ver_min, ver_rev;
+    int ver_maj, ver_min, ver_rev, ver_alt, len, i, c;
     char rd_buf[1024];
     int tmp_fd, ret;
 
@@ -63,11 +63,28 @@ smu_return_val smu_init_parse(smu_obj_t* obj) {
     if (ret < 0)
         return SMU_Return_RWError;
 
-    ret = sscanf(rd_buf, "%d.%d.%d\n", &ver_maj, &ver_min, &ver_rev);
+    len = strlen(rd_buf);
+    for (i = 0, c = 0; i < rd_buf; i++)
+        if (rd_buf[i] == '.')
+            c++;
+
+    // Depending on the processor, there can be either a 3 or 4 part segment.
+    // We account for both
+    switch (c) {
+        case 3:
+            ret = sscanf(rd_buf, "%d.%d.%d\n", &ver_maj, &ver_min, &ver_rev);
+            obj->smu_version = ver_maj << 16 | ver_min << 8 | ver_rev;
+            break;
+        case 4:
+            ret = sscanf(rd_buf, "%d.%d.%d.%d\n", &ver_maj, &ver_min, &ver_rev, &ver_alt);
+            obj->smu_version = ver_maj << 24 | ver_min << 16 | ver_rev << 8 | ver_alt;
+            break;
+        default:
+            return SMU_Return_RWError;
+    }
+
     if (ret == EOF || ret < 3)
         return SMU_Return_RWError;
-
-    obj->smu_version = ver_maj << 24 | ver_min << 8 | ver_rev;
 
     // Codename must also be present.
     if (!try_open_path(CODENAME_PATH, O_RDONLY, &tmp_fd))
@@ -94,7 +111,7 @@ smu_return_val smu_init_parse(smu_obj_t* obj) {
         if (ret < 0)
             return SMU_Return_RWError;
 
-        ret = sscanf(rd_buf, "%d\n", &obj->smu_if_version);
+        ret = sscanf(rd_buf, "%d\n", (int*)&obj->smu_if_version);
         if (ret == EOF || ret > 3)
             return SMU_Return_RWError;
     }
@@ -174,6 +191,25 @@ void smu_free(smu_obj_t* obj) {
         pthread_mutex_destroy(&obj->lock[i]);
 
     memset(obj, 0, sizeof(*obj));
+}
+
+const char* smu_get_fw_version(smu_obj_t* obj) {
+    static char fw[32] = { 0 };
+
+    if (!obj->init)
+        return "Uninitialized";
+
+    if (obj->smu_version & 0xff000000) {
+        sprintf(fw, "%d.%d.%d.%d",
+            (obj->smu_version >> 24) & 0xff, (obj->smu_version >> 16) & 0xff,
+            (obj->smu_version >> 8) & 0xff, obj->smu_version & 0xff);
+    }
+    else
+        sprintf(fw, "%d.%d.%d",
+            (obj->smu_version >> 16) & 0xff, (obj->smu_version >> 8) & 0xff,
+            obj->smu_version & 0xff);
+
+    return fw;
 }
 
 unsigned int smu_read_smn_addr(smu_obj_t* obj, unsigned int address, unsigned int* result) {

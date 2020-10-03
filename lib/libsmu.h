@@ -151,6 +151,11 @@ int smu_init(smu_obj_t* obj);
 void smu_free(smu_obj_t* obj);
 
 /**
+ * Returns the string representation of the SMU FW version.
+ */
+const char* smu_get_fw_version(smu_obj_t* obj);
+
+/**
  * Reads or writes a 32 bit word from the SMN address space.
  */
 unsigned int smu_read_smn_addr(smu_obj_t* obj, unsigned int address, unsigned int* result);
