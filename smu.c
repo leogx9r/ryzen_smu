@@ -206,11 +206,11 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
     }
     else if (e_model <= 0x1F && pkg_type == 2)
         g_smu.codename = CODENAME_RAVENRIDGE;
-    else switch(cpuid) {
-        case 0x00A20F10:
+    else switch(cpuid & 0xFFF0F00) {
+        case 0x00A20F00:
             g_smu.codename = CODENAME_VERMEER;
             break;
-        case 0x00A50F01:
+        case 0x00A50F00:
             g_smu.codename = CODENAME_CEZANNE;
             break;
         case 0x00A40F00:
@@ -219,7 +219,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
         case 0x00890F00:
             g_smu.codename = CODENAME_VANGOGH;
             break;
-        case 0x00A00F11:
+        case 0x00A00F00:
             g_smu.codename = CODENAME_MILAN;
             break;
         default:
