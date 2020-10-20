@@ -20,12 +20,15 @@
 
 #include <math.h>
 #include <sched.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <cpuid.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <signal.h>
 #include <unistd.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -43,94 +46,180 @@
 
 #define MAX_CORES                       32
 
-#define READ_SMN_V1(offs)                       { if (smu_read_smn_addr(&obj, offs + offset, &value1) != SMU_Return_OK) goto _READ_ERROR; }
-#define READ_SMN_V2(offs)                       { if (smu_read_smn_addr(&obj, offs + offset, &value2) != SMU_Return_OK) goto _READ_ERROR; }
-
-typedef struct {
-    int               init;
-
-    int               msr[MAX_CORES];
-    float             core_power[MAX_CORES];
-    float             package_power;
-    float             energy_unit_delta;
-} rapl_state_t;
+#define READ_SMN_V1(offs) { if (smu_read_smn_addr(&obj, offs + offset, &value1) != SMU_Return_OK) goto _READ_ERROR; }
+#define READ_SMN_V2(offs) { if (smu_read_smn_addr(&obj, offs + offset, &value2) != SMU_Return_OK) goto _READ_ERROR; }
 
 // Ryzen 3700X/3800X
 typedef struct {
-    float            ppt_limit;          // 0x0000 -- Power [W]
-    float            ppt_used;           // 0x0004 -- Power [W]
-    float            tdc_limit;          // 0x0008 -- Current [A]
-    float            tdc_used;           // 0x000C -- Current [A]
-    float            thermal_junction;   // 0x0010 -- Degrees [C]
-    float            current_temp;       // 0x0014 -- Degrees [C]
-    float            pad_0018[2];        // 0x0018
-    float            edc_limit;          // 0x0020 -- Current [A]
-    float            edc_used;           // 0x0024 -- Current [A]
-    float            pad_0028;           // 0x0028
-    float            svi_core;           // 0x002C -- Voltage [V]
-    float            pad_0030;           // 0x0030
-    float            ppt_used_alt;       // 0x0034 -- Power [W]
-    float            pad_0038[10];       // 0x0038
-    float            core_power;         // 0x0060 -- Power [W]
-    float            soc_power;          // 0x0064 -- Power [W]
-    float            pad_0068[14];       // 0x0068
-    float            vddcr_vdd;          // 0x00A0 -- Voltage [V]
-    float            pad_00A4[3];        // 0x00A4
-    float            vddcr_soc;          // 0x00B0 -- Voltage [V]
-    float            svi_soc;            // 0x00B4 -- Voltage [V]
-    float            svi_soc_current;    // 0x00B8 -- Current [A]
-    float            pad_00BC;           // 0x00BC
-    float            if_limit;           // 0x00C0 -- Frequency [MHz]
-    float            if_frequency;       // 0x00C4 -- Frequency [MHz]
-    float            pad_00C8[24];       // 0x00C8
-    float            uncore_frequency;   // 0x0128 -- Frequency [MHz]
-    float            pad_012C[3];        // 0x012C
-    float            mclk_frequency;     // 0x0138 -- Frequency [MHz]
-    float            pad_013C[46];       // 0x013C
-    float            cldo_vddp;          // 0x01F4 -- Voltage [V]
-    float            cldo_vddg;          // 0x01F8 -- Voltage [V]
-    float            pad_01FC[8];        // 0x01FC
-    float            gated_time;         // 0x021C
-    float            pad_0220[11];       // 0x0220
-    float            ncore_power[8];     // 0x024C -- Power [W]
-    float            pad_026C[32];       // 0x026C
-    float            ncore_frequency[8]; // 0x02EC -- Frequency [MHz]
-    float            ncore_real_freq[8]; // 0x030C -- Frequency [MHz]
-    float            ncore_usage[8];     // 0x032C
-    float            pad_034C[8];        // 0x034C
-    float            ncore_sleep[8];     // 0x036C
-    float            pad_038C[99];       // 0x038C
-} __attribute__((__packed__)) pm_table_0x240903, *ppm_table_0x240903;
+	float PPT_LIMIT;
+	float PPT_VALUE;
+	float TDC_LIMIT;
+	float TDC_VALUE;
+	float THM_LIMIT;
+	float THM_VALUE;
+	float FIT_LIMIT;
+	float FIT_VALUE;
+	float EDC_LIMIT;
+	float EDC_VALUE;
+	float VID_LIMIT;
+	float VID_VALUE;
+	float PPT_WC;
+	float PPT_ACTUAL;
+	float TDC_WC;
+	float TDC_ACTUAL;
+	float THM_WC;
+	float THM_ACTUAL;
+	float FIT_WC;
+	float FIT_ACTUAL;
+	float EDC_WC;
+	float EDC_ACTUAL;
+	float VID_WC;
+	float VID_ACTUAL;
+	float VDDCR_CPU_POWER;
+	float VDDCR_SOC_POWER;
+	float VDDIO_MEM_POWER;
+	float VDD18_POWER;
+	float ROC_POWER;
+	float SOCKET_POWER;
+	float PPT_FREQUENCY;
+	float TDC_FREQUENCY;
+	float THM_FREQUENCY;
+	float PROCHOT_FREQUENCY;
+	float VOLTAGE_FREQUENCY;
+	float CCA_FREQUENCY;
+	float FIT_VOLTAGE;
+	float FIT_PRE_VOLTAGE;
+	float LATCHUP_VOLTAGE;
+	float CPU_SET_VOLTAGE;
+	float CPU_TELEMETRY_VOLTAGE;
+	float CPU_TELEMETRY_CURRENT;
+	float CPU_TELEMETRY_POWER;
+    float CPU_TELEMETRY_POWER_ALT;
+	float SOC_SET_VOLTAGE;
+	float SOC_TELEMETRY_VOLTAGE;
+	float SOC_TELEMETRY_CURRENT;
+	float SOC_TELEMETRY_POWER;
+	float FCLK_FREQ;
+	float FCLK_FREQ_EFF;
+	float UCLK_FREQ;
+	float MEMCLK_FREQ;
+	float FCLK_DRAM_SETPOINT;
+	float FCLK_DRAM_BUSY;
+	float FCLK_GMI_SETPOINT;
+	float FCLK_GMI_BUSY;
+	float FCLK_IOHC_SETPOINT;
+	float FCLK_IOHC_BUSY;
+	float FCLK_XGMI_SETPOINT;
+	float FCLK_XGMI_BUSY;
+	float CCM_READS;
+	float CCM_WRITES;
+	float IOMS;
+	float XGMI;
+	float CS_UMC_READS;
+	float CS_UMC_WRITES;
+	float FCLK_RESIDENCY[4];
+	float FCLK_FREQ_TABLE[4];
+	float UCLK_FREQ_TABLE[4];
+	float MEMCLK_FREQ_TABLE[4];
+	float FCLK_VOLTAGE[4];
+	float LCLK_SETPOINT_0;
+	float LCLK_BUSY_0;
+	float LCLK_FREQ_0;
+	float LCLK_FREQ_EFF_0;
+	float LCLK_MAX_DPM_0;
+	float LCLK_MIN_DPM_0;
+	float LCLK_SETPOINT_1;
+	float LCLK_BUSY_1;
+	float LCLK_FREQ_1;
+	float LCLK_FREQ_EFF_1;
+	float LCLK_MAX_DPM_1;
+	float LCLK_MIN_DPM_1;
+	float LCLK_SETPOINT_2;
+	float LCLK_BUSY_2;
+	float LCLK_FREQ_2;
+	float LCLK_FREQ_EFF_2;
+	float LCLK_MAX_DPM_2;
+	float LCLK_MIN_DPM_2;
+	float LCLK_SETPOINT_3;
+	float LCLK_BUSY_3;
+	float LCLK_FREQ_3;
+	float LCLK_FREQ_EFF_3;
+	float LCLK_MAX_DPM_3;
+	float LCLK_MIN_DPM_3;
+	float XGMI_SETPOINT;
+	float XGMI_BUSY;
+	float XGMI_LANE_WIDTH;
+	float XGMI_DATA_RATE;
+	float SOC_POWER;
+	float SOC_TEMP;
+	float DDR_VDDP_POWER;
+	float DDR_VDDIO_MEM_POWER;
+	float GMI2_VDDG_POWER;
+	float IO_VDDCR_SOC_POWER;
+	float IOD_VDDIO_MEM_POWER;
+	float IO_VDD18_POWER;
+	float TDP;
+	float DETERMINISM;
+	float V_VDDM;
+	float V_VDDP;
+	float V_VDDG;
+	float PEAK_TEMP;
+	float PEAK_VOLTAGE;
+	float AVG_CORE_COUNT;
+	float CCLK_LIMIT;
+	float MAX_VOLTAGE;
+	float DC_BTC;
+	float CSTATE_BOOST;
+	float PROCHOT;
+	float PC6;
+	float PWM;
+	float SOCCLK;
+	float SHUBCLK;
+	float MP0CLK;
+	float MP1CLK;
+	float MP5CLK;
+	float SMNCLK;
+	float TWIXCLK;
+	float WAFLCLK;
+	float DPM_BUSY;
+	float MP1_BUSY;
+	float CORE_POWER[8];
+	float CORE_VOLTAGE[8];
+	float CORE_TEMP[8];
+	float CORE_FIT[8];
+	float CORE_IDDMAX[8];
+	float CORE_FREQ[8];
+	float CORE_FREQEFF[8];
+	float CORE_C0[8];
+	float CORE_CC1[8];
+	float CORE_CC6[8];
+	float CORE_CKS_FDD[8];
+	float CORE_CI_FDD[8];
+	float CORE_IRM[8];
+	float CORE_PSTATE[8];
+	float CORE_CPPC_MAX[8];
+	float CORE_CPPC_MIN[8];
+	float CORE_SC_LIMIT[8];
+	float CORE_SC_CAC[8];
+	float CORE_SC_RESIDENCY[8];
+	float L3_LOGIC_POWER[2];
+	float L3_VDDM_POWER[2];
+	float L3_TEMP[2];
+	float L3_FIT[2];
+	float L3_IDDMAX[2];
+	float L3_FREQ[2];
+	float L3_CKS_FDD[2];
+	float L3_CCA_THRESHOLD[2];
+	float L3_CCA_CAC[2];
+	float L3_CCA_ACTIVATION[2];
+	float L3_EDC_LIMIT[2];
+	float L3_EDC_CAC[2];
+	float L3_EDC_RESIDENCY[2];
+	float MP5_BUSY[1];
+} pm_table_0x240903, *ppm_table_0x240903;
 
 static smu_obj_t obj;
-static rapl_state_t rapl = { 0, };
-static int use_rapl = 0;
 static int update_time_s = 1;
-
-int open_msr(int core, int* fp) {
-    char msr_path[512];
-
-	sprintf(msr_path, "/dev/cpu/%d/msr", core);
-	*fp = open(msr_path, O_RDONLY);
-
-    if (!*fp) {
-        perror(__func__);
-        return 0xc0de;
-    }
-
-    return 0;
-}
-
-static long long read_msr(int fd, unsigned int which) {
-	__uint64_t data;
-
-	if (pread(fd, &data, sizeof data, which) != sizeof data) {
-		perror(__func__);
-		exit(0xdead);
-	}
-
-	return (long long)data;
-}
 
 void print_memory_timings() {
     const char* bool_str[2] = { "Disabled", "Enabled" };
@@ -216,8 +305,8 @@ void append_u32_to_str(char* buffer, unsigned int val) {
 }
 
 const char* get_processor_name() {
-    unsigned int eax, ebx, ecx, edx;
-    static char buffer[50] = { 0 };
+    unsigned int eax, ebx, ecx, edx, l;
+    static char buffer[50] = { 0 }, *p;
 
     __get_cpuid(0x80000002, &eax, &ebx, &ecx, &edx);
     append_u32_to_str(buffer, eax);
@@ -237,112 +326,101 @@ const char* get_processor_name() {
     append_u32_to_str(buffer, ecx);
     append_u32_to_str(buffer, edx);
 
+    // Trim whitespaces
+    p = buffer;
+    l = strlen(p);
+    while(isspace(p[l - 1])) p[--l] = 0;
+    while(* p && isspace(* p)) ++p, --l;
+
     return buffer;
 }
 
-unsigned int get_processor_cores() {
-    unsigned int eax, ebx, ecx, edx,
-        logicalCores, threadsPerCore;
+unsigned int count_set_bits(unsigned int v) {
+    unsigned int result = 0;
+
+    while(v != 0) {
+        if (v & 1)
+            result++;
+
+        v >>= 1;
+    }
+
+    return result;
+}
+
+unsigned int get_processor_topology(unsigned int* ccds, unsigned int *ccxs,
+    unsigned int *cores_per_ccx, unsigned int* cores) {
+    unsigned int ccds_present, ccds_down, ccd_enable_map, ccd_disable_map,
+        core_disable_map, core_disable_map_addr, logical_cores, threads_per_core,
+        eax, ebx, ecx, edx;
+
+    if (smu_read_smn_addr(&obj, 0x5D218, &ccds_present) != SMU_Return_OK ||
+        smu_read_smn_addr(&obj, 0x5D21C, &ccds_down) != SMU_Return_OK) {
+        perror("Failed to read CCD fuses");
+        exit(-1);
+    }
+
+    ccd_enable_map = (ccds_present >> 22) & 0xff;
+    ccd_disable_map = ((ccds_present >> 30) & 0x3) | ((ccds_down & 0x3f) << 2);
+
+    core_disable_map_addr = (0x30081800 + 0x238) | (((ccd_enable_map & 1) == 0) ? 0x2000000 : 0);
+
+    if (smu_read_smn_addr(&obj, core_disable_map_addr, &core_disable_map) != SMU_Return_OK) {
+        perror("Failed to read disabled core fuse");
+        exit(-1);
+    }
 
     __get_cpuid(0x00000001, &eax, &ebx, &ecx, &edx);
-    logicalCores = (ebx >> 16) & 0xFF;
+    logical_cores = (ebx >> 16) & 0xFF;
 
     __get_cpuid(0x8000001E, &eax, &ebx, &ecx, &edx);
-    threadsPerCore = ((ebx >> 8) & 0xF) + 1;
+    threads_per_core = ((ebx >> 8) & 0xF) + 1;
 
-    if (!threadsPerCore)
-        return logicalCores;
-
-    return logicalCores / threadsPerCore;
-}
-
-unsigned int get_processor_ccds() {
-    unsigned int ccdCount, value1, value2, value3, value4;
-
-    ccdCount = 0;
-
-    if (smu_read_smn_addr(&obj, 0x5D21A, &value1) != SMU_Return_OK ||
-        smu_read_smn_addr(&obj, 0x5D21B, &value2) != SMU_Return_OK ||
-        smu_read_smn_addr(&obj, 0x5D21C, &value3) != SMU_Return_OK) {
-            perror("Failed to determine the CCD count");
-            exit(-1);
-    }
-
-    value1 = (value1 >> 22) & 0xff;
-    value2 = (value2 >> 30) & 0xff;
-    value3 = value3 & 0x3f;
-
-    value4 = value2 | (4 * value3);
-
-    if ((value1 & 1) == 0 || value4 & 1)
-      ccdCount = ccdCount;
+    if (!threads_per_core)
+        *cores = logical_cores;
     else
-      ccdCount = ccdCount + 1;
+        *cores = logical_cores / threads_per_core;
 
-    if (0x80000000 & value1 && (0x80000000 & value4) == 0)
-        ccdCount = ccdCount + 1;
-
-    if (0x40000000 & value1 && (0x40000000 & value4) == 0)
-        ccdCount = ccdCount + 1;
-
-    if (0x20000000 & value1 && (0x20000000 & value4) == 0)
-        ccdCount = ccdCount + 1;
-
-    if (0x10000000 & value1 && (0x10000000 & value4) == 0)
-        ccdCount = ccdCount + 1;
-
-    if (0x8000000 & value1 && (0x8000000 & value4) == 0)
-        ccdCount = ccdCount + 1;
-
-    if (0x4000000 & value1 && (0x4000000 & value4) == 0)
-        ccdCount = ccdCount + 1;
-
-    if (0x2000000 & value1 && (0x2000000 & value4) == 0)
-        ccdCount = ccdCount + 1;
-
-    return ccdCount;
+    *cores_per_ccx = (8 - count_set_bits(core_disable_map & 0xff)) / 2;
+    *ccds = count_set_bits(ccd_enable_map);
+    *ccxs = *cores == *cores_per_ccx ? 1 : *ccds * 2;
 }
 
-void rapl_monitor(FILE* fp, int n_cores) {
-    double core_energy_a[MAX_CORES], core_energy_b[MAX_CORES];
-    double package_energy_a, package_energy_b;
-    int i;
+void print_line(const char* label, const char* value_format, ...) {
+    static char buffer[1024];
+    va_list list;
 
-    if (!rapl.init) {
-        for (i = 0; i < n_cores; i++) {
-            if (!open_msr(i, &rapl.msr[i]))
-                continue;
+    va_start(list, value_format);
+    vsnprintf(buffer, sizeof(buffer), value_format, list);
+    va_end(list);
 
-            fprintf(stdout, "Failed to open MSR for reading.\n");
-            return;
-        }
+    fprintf(stdout, "│ %46s │ %47s │\n", label, buffer);
+}
 
-        rapl.energy_unit_delta = pow(0.5, (read_msr(rapl.msr[0], AMD_MSR_PWR_UNIT) & AMD_ENERGY_UNIT_MASK) >> 8);
+void _print_core_line(const char* label, const char* value_format, ...) {
+    static char buffer[1024];
+    va_list list;
 
-        rapl.init = 1;
-    }
+    va_start(list, value_format);
+    vsnprintf(buffer, sizeof(buffer), value_format, list);
+    va_end(list);
 
-    package_energy_a = read_msr(rapl.msr[0], AMD_MSR_PACKAGE_ENERGY) * rapl.energy_unit_delta;
-    for (i = 0; i < n_cores; i++)
-        core_energy_a[i] = read_msr(rapl.msr[i], AMD_MSR_CORE_ENERGY) * rapl.energy_unit_delta;
+    fprintf(stdout, "│ %7s │ %86s │\n", label, buffer);
+}
 
-    usleep(100000);
-
-    package_energy_b = read_msr(rapl.msr[0], AMD_MSR_PACKAGE_ENERGY) * rapl.energy_unit_delta;
-    for (i = 0; i < n_cores; i++)
-		core_energy_b[i] = read_msr(rapl.msr[i], AMD_MSR_CORE_ENERGY) * rapl.energy_unit_delta;
-
-    fprintf(stdout, "Package:         %8.3f W\n", (package_energy_b - package_energy_a) * 10);
-    for (i = 0; i < n_cores; i++)
-        fprintf(fp, "Core %d:         %8.3f W\n", i, (core_energy_b[i] - core_energy_a[i]) * 10);
+#define core_print_line(core, value, ...) { \
+    char buffer[1024]; \
+    \
+    sprintf(buffer, "Core %d", core); \
+    _print_core_line(buffer, value, __VA_ARGS__); \
 }
 
 void start_pm_monitor(int force) {
     float total_usage, peak_core_frequency, core_voltage, core_frequency,
-        total_voltage, average_voltage, core_sleep_time, edc_used;
+        total_voltage, average_voltage, core_sleep_time, edc_value, total_core_CC6;
 
-    const char* name, *codename;
-    unsigned int cores, ccds, if_ver, i;
+    const char* name, *codename, *smu_fw_ver;
+    unsigned int cores, ccds, ccxs, cores_per_ccx, if_ver, i;
     ppm_table_0x240903 pmt;
     unsigned char *pm_buf;
 
@@ -356,10 +434,11 @@ void start_pm_monitor(int force) {
         exit(0);
     }
 
-    name     = get_processor_name();
-    codename = smu_codename_to_str(&obj);
-    cores    = get_processor_cores();
-    ccds     = get_processor_ccds();
+    name        = get_processor_name();
+    codename    = smu_codename_to_str(&obj);
+    smu_fw_ver  = smu_get_fw_version(&obj);
+
+    get_processor_topology(&ccds, &ccxs, &cores_per_ccx, &cores);
 
     pm_buf = calloc(obj.pm_table_size, sizeof(unsigned char));
     pmt = (ppm_table_0x240903)pm_buf;
@@ -385,80 +464,105 @@ void start_pm_monitor(int force) {
             break;
     }
 
+
     while(1) {
         if (smu_read_pm_table(&obj, pm_buf, obj.pm_table_size) != SMU_Return_OK)
             continue;
 
         fprintf(stdout, "\e[1;1H\e[2J");
 
-        fprintf(stdout, "=====================  CPU INFO  =====================\n");
-        fprintf(stdout, "Model: %s\nCode Name: %s\nCCD(s): %d | Core(s): %d | IF: v%d\n", name, codename, ccds, cores, if_ver);
+        fprintf(stdout, "╭────────────────────────────────────────────────┬─────────────────────────────────────────────────╮\n");
+        print_line("CPU Model", name);
+        print_line("Processor Code Name", codename);
+        print_line("Cores", "%d", cores);
+        print_line("Core CCDs", "%d", ccds);
+        print_line("Core CCXs", "%d", ccxs);
+        print_line("Cores Per CCX", "%d", cores_per_ccx);
+        print_line("SMU FW Version", "v%s", smu_fw_ver);
+        print_line("MP1 IF Version", "v%d", if_ver);
+        fprintf(stdout, "╰────────────────────────────────────────────────┴─────────────────────────────────────────────────╯\n");
 
-        total_usage = total_voltage = peak_core_frequency = 0;
+        total_core_CC6 = total_usage = total_voltage = peak_core_frequency = 0;
 
-        average_voltage = (pmt->vddcr_vdd * (1.0 - (pmt->gated_time * 0.01))) + (0.002 * pmt->gated_time);
+        average_voltage = (pmt->CPU_TELEMETRY_VOLTAGE * (1.0 - (pmt->PC6 * 0.01))) +
+            (0.002 * pmt->PC6);
 
+        fprintf(stdout, "╭─────────┬────────────────┬─────────┬─────────┬─────────┬─────────────┬─────────────┬─────────────╮\n");
         for (i = 0; i < cores; i++) {
-            core_frequency = pmt->ncore_real_freq[i] * 1000.f;
+            core_frequency = pmt->CORE_FREQEFF[i] * 1000.f;
 
             if (peak_core_frequency < core_frequency)
                 peak_core_frequency = core_frequency;
 
-            total_usage += pmt->ncore_usage[i];
+            total_usage += pmt->CORE_C0[i];
+            total_core_CC6 += pmt->CORE_CC6[i];
 
             // "Real core frequency" -- excluding gating
-            if (pmt->ncore_frequency[i] != 0.f) {
-                core_sleep_time = pmt->ncore_sleep[i] / 100.f;
+            if (pmt->CORE_FREQ[i] != 0.f) {
+                core_sleep_time = pmt->CORE_CC6[i] / 100.f;
                 core_voltage = ((1.0 - core_sleep_time) * average_voltage) + (0.2 * core_sleep_time);
                 total_voltage += core_voltage;
             }
 
-            if (pmt->ncore_usage[i] >= 6.f)
-                fprintf(stdout, "Core #%d: %4.0f MHz  @ %4.4f W @ %1.4f V ( %6.2f % )\n", i, core_frequency, pmt->ncore_power[i], core_voltage, pmt->ncore_usage[i]);
+            if (pmt->CORE_C0[i] >= 6.f) {
+                core_print_line(i,
+                    "%4.f MHz | %4.3f W | %1.3f V | %4.2f C | C0: %5.1f % | C1: %5.1f % | C6: %5.1f %",
+                    core_frequency, pmt->CORE_POWER[i], core_voltage, pmt->CORE_TEMP[i],
+                    pmt->CORE_C0[i], pmt->CORE_CC1[i], pmt->CORE_CC6[i]);
+            }
             else
-                fprintf(stdout, "Core #%d: Sleeping  @ %4.4f W @ %1.4f V ( %6.2f % )\n", i, pmt->ncore_power[i], core_voltage, pmt->ncore_usage[i]);
+                core_print_line(i,
+                    "Sleeping | %4.3f W | %1.3f V | %4.2f C | C0: %5.1f % | C1: %5.1f % | C6: %5.1f %",
+                    pmt->CORE_POWER[i], core_voltage, pmt->CORE_TEMP[i], pmt->CORE_C0[i],
+                    pmt->CORE_CC1[i], pmt->CORE_CC6[i]);
         }
+        fprintf(stdout, "╰─────────┴────────────────┴─────────┴─────────┴─────────┴─────────────┴─────────────┴─────────────╯\n");
 
-
+        fprintf(stdout, "╭────────────────────────────────────────────────┬─────────────────────────────────────────────────╮\n");
         average_voltage = total_voltage / cores;
-        edc_used = pmt->edc_used * (total_usage / cores / 100);
+        edc_value = pmt->EDC_VALUE * (total_usage / cores / 100);
 
-        if (edc_used < pmt->tdc_used)
-            edc_used = pmt->tdc_used;
+        if (edc_value < pmt->TDC_VALUE)
+            edc_value = pmt->TDC_VALUE;
 
-        fprintf(stdout, "Peak Core Frequency:  %8.0f MHz\n", peak_core_frequency);
-        fprintf(stdout, "Vdd Voltage:          %2.6f V\n", pmt->svi_core);
-        fprintf(stdout, "Peak Core Voltage:    %2.6f V\n", pmt->vddcr_vdd);
-        fprintf(stdout, "Average Voltage:      %2.6f V\n", average_voltage);
+        total_core_CC6 /= cores;
 
-        fprintf(stdout, "======================================================\n\n");
-        fprintf(stdout, "===================== PBO LIMITS =====================\n");
+        print_line("Peak Core Frequency", "%8.0f MHz", peak_core_frequency);
+        print_line("Peak Temperature", "%8.2f C", pmt->PEAK_TEMP);
+        print_line("Package Power", "%8.4f W", pmt->SOCKET_POWER);
+        print_line("Peak Core Voltage", "%2.6f V", pmt->CPU_TELEMETRY_VOLTAGE);
+        print_line("Average Voltage", "%2.6f V", average_voltage);
+        print_line("Package CC6", "%3.6f %%", pmt->PC6);
+        print_line("Core CC6", "%3.6f %%", total_core_CC6);
+        fprintf(stdout, "╰────────────────────────────────────────────────┴─────────────────────────────────────────────────╯\n");
 
-        fprintf(stdout, "TjMax: %8.2f °C\n", pmt->thermal_junction);
-        fprintf(stdout, "Temp:  %8.2f °C\n", pmt->current_temp);
-        fprintf(stdout, "Core:  %8.4f W\n", pmt->core_power);
-        fprintf(stdout, "SoC:   %8.4f W / %7.4f A / %7.6f V\n", pmt->soc_power, pmt->svi_soc_current, pmt->svi_soc);
-        fprintf(stdout, "PPT:   %8.2f W / %7.f W ( %6.2f % )\n", pmt->ppt_used, pmt->ppt_limit, (pmt->ppt_used / pmt->ppt_limit * 100));
-        fprintf(stdout, "TDC:   %8.2f A / %7.f A ( %6.2f % )\n", pmt->tdc_used, pmt->tdc_limit, (pmt->tdc_used / pmt->tdc_limit * 100));
-        fprintf(stdout, "EDC:   %8.2f A / %7.f A ( %6.2f % )\n", edc_used, pmt->edc_limit, (edc_used / pmt->edc_limit * 100));
-        fprintf(stdout, "======================================================\n\n");
+        fprintf(stdout, "╭────────────────────────────────────────────────┬─────────────────────────────────────────────────╮\n");
+        print_line("Thermal Junction Limit", "%8.2f C", pmt->THM_LIMIT);
+        print_line("Current Temperature", "%8.2f C", pmt->THM_VALUE);
+        print_line("Core Power", "%8.4f W", pmt->VDDCR_CPU_POWER);
+        print_line("SoC Power", "%4.4f W | %4.4f A | %8.6f V", pmt->SOC_TELEMETRY_POWER,
+            pmt->SOC_TELEMETRY_CURRENT, pmt->SOC_TELEMETRY_VOLTAGE);
+        print_line("PPT", "%4.4f W | %7.f W  | %8.2f %%", pmt->PPT_VALUE, pmt->PPT_LIMIT,
+            (pmt->PPT_VALUE / pmt->PPT_LIMIT * 100));
+        print_line("TDC", "%4.4f A | %7.f A  | %8.2f %%", pmt->TDC_VALUE, pmt->TDC_LIMIT,
+            (pmt->TDC_VALUE / pmt->TDC_LIMIT * 100));
+        print_line("EDC", "%4.4f A | %7.f A  | %8.2f %%", edc_value, pmt->EDC_LIMIT,
+            (edc_value / pmt->EDC_LIMIT * 100));
+        print_line("FIT Limit", "%f %%", (pmt->FIT_VALUE / pmt->FIT_LIMIT) * 100.f);
+        fprintf(stdout, "╰────────────────────────────────────────────────┴─────────────────────────────────────────────────╯\n");
 
-        fprintf(stdout, "=====================   MEMORY   =====================\n");
-        fprintf(stdout, "Coupled Mode:   %s\n", pmt->uncore_frequency == pmt->mclk_frequency ? "ON" : "OFF");
-        fprintf(stdout, "FCLK (Avg):   %6.f MHz\n", pmt->if_frequency);
-        fprintf(stdout, "FCLK:         %6.f MHz\n", pmt->if_limit);
-        fprintf(stdout, "UCLK:         %6.f MHz\n", pmt->uncore_frequency);
-        fprintf(stdout, "MCLK:         %6.f MHz\n", pmt->mclk_frequency);
-        fprintf(stdout, "VDDCR_SoC:    %.4f V\n", pmt->vddcr_soc);
-        fprintf(stdout, "cLDO_VDDP:    %.4f V\n", pmt->cldo_vddp);
-        fprintf(stdout, "cLDO_VDDG:    %.4f V\n", pmt->cldo_vddg);
-        fprintf(stdout, "======================================================\n");
-
-        if (use_rapl) {
-            fprintf(stdout, "=====================    RAPL    =====================\n");
-            rapl_monitor(stdout, cores);
-            fprintf(stdout, "======================================================\n");
-        }
+        fprintf(stdout, "╭────────────────────────────────────────────────┬─────────────────────────────────────────────────╮\n");
+        print_line("Coupled Mode", "%8s", pmt->UCLK_FREQ == pmt->MEMCLK_FREQ ? "ON" : "OFF");
+        print_line("Fabric Clock (Average)", "%5.f MHz", pmt->FCLK_FREQ_EFF);
+        print_line("Fabric Clock", "%5.f MHz", pmt->FCLK_FREQ);
+        print_line("Uncore Clock", "%5.f MHz", pmt->UCLK_FREQ);
+        print_line("Memory Clock", "%5.f MHz", pmt->MEMCLK_FREQ);
+        print_line("VDDCR_Mem", "%7.4f W", pmt->VDDIO_MEM_POWER);
+        print_line("VDDCR_SoC", "%7.4f V", pmt->SOC_SET_VOLTAGE);
+        print_line("cLDO_VDDM", "%7.4f V", pmt->V_VDDM);
+        print_line("cLDO_VDDP", "%7.4f V", pmt->V_VDDP);
+        print_line("cLDO_VDDG", "%7.4f V", pmt->V_VDDG);
+        fprintf(stdout, "╰────────────────────────────────────────────────┴─────────────────────────────────────────────────╯\n");
 
         // Hide Cursor
         fprintf(stdout, "\e[?25l");
@@ -483,7 +587,6 @@ void show_help(char* program) {
             "\t-h - Show this help screen.\n"
             "\t-v - Show program version.\n"
             "\t-m - Print DRAM Timings and exit.\n"
-            "\t-r - Enable RAPL support when monitoring.\n"
             "\t-f - Force PM table monitoring even if the PM table version is not supported.\n"
             "\t-u<seconds> - Update the monitoring only after this number of second(s) have passed. Defaults to 1.\n",
         program
@@ -504,9 +607,6 @@ void parse_args(int argc, char** argv) {
             case 'm':
                 print_memory_timings();
                 exit(0);
-            case 'r':
-                use_rapl = 1;
-                break;
             case 'f':
                 force = 1;
                 break;
