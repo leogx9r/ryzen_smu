@@ -264,6 +264,8 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_rsmu_mb_args = 0x3B10A88;
             pr_debug("RSMU mailbox 3 selected for use");
             break;
+            // Note: This **MAY** use the same mailbox as Matisse but untested at this time.
+        case CODENAME_VERMEER:
         case CODENAME_VANGOGH:
         case CODENAME_REMBRANT:
         case CODENAME_CEZANNE:
