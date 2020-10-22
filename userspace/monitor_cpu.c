@@ -539,6 +539,7 @@ void start_pm_monitor(int force) {
         fprintf(stdout, "╭────────────────────────────────────────────────┬─────────────────────────────────────────────────╮\n");
         print_line("Thermal Junction Limit", "%8.2f C", pmt->THM_LIMIT);
         print_line("Current Temperature", "%8.2f C", pmt->THM_VALUE);
+        print_line("SoC Temperature", "%8.2f C", pmt->SOC_TEMP);
         print_line("Core Power", "%8.4f W", pmt->VDDCR_CPU_POWER);
         print_line("SoC Power", "%4.4f W | %4.4f A | %8.6f V", pmt->SOC_TELEMETRY_POWER,
             pmt->SOC_TELEMETRY_CURRENT, pmt->SOC_TELEMETRY_VOLTAGE);
