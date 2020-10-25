@@ -63,6 +63,16 @@ cd ryzen_smu
 sudo make dkms-install
 ```
 
+### Arch Linux
+
+Available on the [AUR](https://aur.archlinux.org/packages/ryzen_smu-dkms-git/).
+
+Install it using your AUR helper of choice, example:
+
+```sh
+yay -S ryzen_smu-dkms-git
+```
+
 ### Stand-alone Installation
 
 The module may be built and inserted into the running kernel manually as follows:
