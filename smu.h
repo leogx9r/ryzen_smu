@@ -74,8 +74,6 @@ enum smu_processor_codename {
     CODENAME_RAVENRIDGE2,
     CODENAME_SUMMITRIDGE,
     CODENAME_PINNACLERIDGE,
-
-    // Not yet supported but still added for now.
     CODENAME_REMBRANT,
     CODENAME_VERMEER,
     CODENAME_VANGOGH,
@@ -111,7 +109,7 @@ enum smu_mailbox {
 
 /* Parameters for SMU execution. */
 extern uint smu_pm_use_timer;
-extern uint smu_pm_update_ms;
+extern uint smu_pm_update_ns;
 extern uint smu_timeout_attempts;
 
 /**

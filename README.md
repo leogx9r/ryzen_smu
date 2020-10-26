@@ -95,6 +95,7 @@ Upon loading the module, you should see output in your `dmesg` window listing th
 # dmesg
 
 ...
+[1091.154018] ryzen_smu: CPUID: family 0x17, model 0x71, stepping 0x0, package 0x2
 [1091.154385] ryzen_smu: SMU v46.54.0
 ...
 ```

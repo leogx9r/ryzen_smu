@@ -20,6 +20,8 @@ MODULE_DESCRIPTION("AMD Ryzen SMU Command Driver");
 MODULE_VERSION("0.0.1");
 MODULE_LICENSE("GPL");
 
+#define MSEC_TO_NSEC(x)         (x * 1000000)
+
 #define PCI_VENDOR_ID_AMD                  0x1022
 #define PCI_DEVICE_ID_AMD_17H_ROOT         0x1450
 #define PCI_DEVICE_ID_AMD_17H_M10H_ROOT    0x15d0
@@ -72,6 +74,7 @@ static struct ryzen_smu_data {
 /* SMU Command Parameters. */
 uint smu_pm_use_timer = 1;
 uint smu_pm_update_ms = 1000;
+uint smu_pm_update_ns = MSEC_TO_NSEC(1000);
 uint smu_timeout_attempts = 8192;
 
 static ssize_t attr_store_null(struct kobject *kobj, struct kobj_attribute *attr, const char *buff, size_t count) {
@@ -281,6 +284,7 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
     // Clamp values.
     if (smu_pm_update_ms > PM_TABLE_MAX_UPDATE_TIME_MS)
         smu_pm_update_ms = PM_TABLE_MAX_UPDATE_TIME_MS;
+
     if (smu_pm_update_ms < PM_TABLE_MIN_UPDATE_TIME_MS)
         smu_pm_update_ms = PM_TABLE_MIN_UPDATE_TIME_MS;
 
@@ -288,6 +292,8 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
         smu_timeout_attempts = SMU_RETRIES_MAX;
     if (smu_timeout_attempts < SMU_RETRIES_MIN)
         smu_timeout_attempts = SMU_RETRIES_MIN;
+
+    smu_pm_update_ns = MSEC_TO_NSEC(smu_pm_update_ms);
 
     // Detect processor class & figure out MP1/RSMU support.
     if (smu_init(g_driver.device) != 0) {

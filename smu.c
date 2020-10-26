@@ -387,10 +387,10 @@ u64 smu_get_dram_base_address(struct pci_dev* dev) {
             fn[0] = 0x0b;
             fn[1] = 0x0c;
             goto BASE_ADDR_CLASS_2;
+        case CODENAME_DALI:
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE:
         case CODENAME_RAVENRIDGE2:
-        case CODENAME_DALI:
             fn[0] = 0x0a;
             fn[1] = 0x3d;
             fn[2] = 0x0b;
@@ -460,19 +460,16 @@ enum smu_return_val smu_transfer_table_to_dram(struct pci_dev* dev) {
 
     switch (g_smu.codename) {
         case CODENAME_MATISSE:
-            // Arg: PpTable
             args[0] = 0;
             fn = 0x05;
             break;
         case CODENAME_RENOIR:
-            // Arg: PmStatusLogTable
             args[0] = 3;
             fn = 0x65;
             break;
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE:
         case CODENAME_RAVENRIDGE2:
-            // Arg: PmStatusLogTable
             args[0] = 3;
             fn = 0x3d;
             break;
@@ -487,9 +484,9 @@ enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) 
     u32 fn;
 
     /**
-     * For Matisse & Renoir, there are different PM tables for each chip.
+     * For some codenames, there are different PM tables for each chip.
      * SMC Message corresponds to TableVersionId.
-     * Presumably this is based on core count.
+     * Based on AGESA FW revision.
      */
     switch (g_smu.codename) {
         case CODENAME_RAVENRIDGE:
@@ -532,6 +529,7 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
                 return ret;
             }
         }
+
         switch (g_smu.codename) {
             case CODENAME_MATISSE:
                 switch (version) {
@@ -601,7 +599,7 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
     // Check if we should tell the SMU to refresh the table with nanosecond precision
     if (smu_pm_use_timer) {
         tm = ktime_get_ns();
-        if ((tm - g_smu.pm_last_probe_ns) > (1000000 * smu_pm_update_ms)) {
+        if ((tm - g_smu.pm_last_probe_ns) > smu_pm_update_ns) {
             ret = smu_transfer_table_to_dram(dev);
             if (ret != SMU_Return_OK)
                 return ret;
