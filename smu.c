@@ -162,7 +162,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
     // See: CPUID_Fn80000001_EBX
     pkg_type = cpuid_ebx(0x80000001) >> 28;
 
-    pr_info("CPUID: family 0x%X model 0x%X stepping 0x%X package 0x%X",
+    pr_info("CPUID: family 0x%X, model 0x%X, stepping 0x%X, package 0x%X",
              cpu_family, cpu_model, stepping, pkg_type);
 
     // Zen / Zen+ / Zen2
@@ -211,7 +211,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
         return 0;
     }
 
-    // Zen3 (model IDs for unreleased silicon not comirmed yet)
+    // Zen3 (model IDs for unreleased silicon not confirmed yet)
     else if (cpu_family == 0x19) {
         switch(cpu_model) {
             case 0x00:
@@ -234,7 +234,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
     }
 
     else {
-        pr_err("CPUID: failed to detect Zen/Zen+/Zen2/Zen3 processor familly");
+        pr_err("CPUID: failed to detect Zen/Zen+/Zen2/Zen3 processor family (%Xh).", cpu_family);
         return -1;
     }
 }
