@@ -470,6 +470,7 @@ enum smu_return_val smu_transfer_table_to_dram(struct pci_dev* dev) {
             fn = 0x65;
             break;
         case CODENAME_PICASSO:
+        case CODENAME_RAVENRIDGE:
         case CODENAME_RAVENRIDGE2:
             // Arg: PmStatusLogTable
             args[0] = 3;
@@ -491,6 +492,9 @@ enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) 
      * Presumably this is based on core count.
      */
     switch (g_smu.codename) {
+        case CODENAME_RAVENRIDGE:
+            fn = 0x0c;
+            break;
         case CODENAME_MATISSE:
             fn = 0x08;
             break;
@@ -568,6 +572,7 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
                 }
                 break;
             case CODENAME_PICASSO:
+            case CODENAME_RAVENRIDGE:
             case CODENAME_RAVENRIDGE2:
                 g_smu.pm_dram_map_size_alt = 0xA4;
                 g_smu.pm_dram_map_size = 0x608 + g_smu.pm_dram_map_size_alt;

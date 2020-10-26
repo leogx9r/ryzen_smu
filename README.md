@@ -29,6 +29,7 @@ In addition, for the following models, the PM table can also be accessed:
 - Matisse
 - Renoir
 - Picasso
+- Raven Ridge
 - Raven Ridge 2
 
 When loaded, the driver exposes several files under sysfs which can only be read with root
@@ -153,11 +154,20 @@ The following are several lists of SMU to AGESA versions for Matisse on the Comb
 
 | SMU Version   | AGESA Version |
 |:-------------:|:-------------:|
+| 46.62         | 1.0.0.6       |
 | 46.54         | 1.0.0.4 B     |
 | 46.53         | 1.0.0.4       |
 | 46.49         | 1.0.0.3 ABBA  |
 | 46.37         | 1.0.0.3 A     |
 | 43.18         | 1.0.0.2 A     |
+
+The following are few known lists of SMU to AGESA RavenPI versions for Raven Ridge and
+Picasso APUs found on various notebooks:
+
+| SMU Version   | AGESA Version |
+|:-------------:|:-------------:|
+| 30.79         | 1.1.0.8       |
+| 30.74         | 1.1.0.6       |
 
 Note: This file returns a string encoded version represented by the "SMU Version" above.
 
@@ -265,15 +275,20 @@ On supported platforms, which are Matisse and Renoir systems, this lists the ver
 
 The following table lists the known characteristics per version:
 
-| Hex      | Platform | Table Size (Hex) |
-|:--------:|:--------:|:----------------:|
-| 0x240902 | Matisse  | 0x514            |
-| 0x240903 | Matisse  | 0x518            |
-| 0x240802 | Matisse  | 0x7E0            |
-| 0x240803 | Matisse  | 0x7E4            |
-| 0x370000 | Renoir   | 0x794            |
-| 0x370001 | Renoir   | 0x884            |
-| 0x370002 | Renoir   | 0x88C            |
+| Hex      | Platform    | Table Size (Hex) |
+|:--------:|:-----------:|:----------------:|
+| 0x1E0004 | Raven Ridge | 0x6AC            |
+| 0x1E0005 | Raven Ridge | 0x6AC            |
+| 0x1E0101 | Raven Ridge | 0x6AC            |
+| 0x240802 | Matisse     | 0x7E0            |
+| 0x240803 | Matisse     | 0x7E4            |
+| 0x240902 | Matisse     | 0x514            |
+| 0x240903 | Matisse     | 0x518            |
+| 0x370000 | Renoir      | 0x794            |
+| 0x370001 | Renoir      | 0x884            |
+| 0x370002 | Renoir      | 0x88C            |
+| 0x370004 | Renoir      | 0x8AC            |
+| 0x370005 | Renoir      | 0x8C8            |
 
 Note: File is a 32 bit word encoded in little-endian binary order.
 
