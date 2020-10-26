@@ -37,15 +37,6 @@
 #define PROGRAM_VERSION                 "1.0"
 #define PM_TABLE_SUPPORTED_VERSION      0x240903
 
-#define AMD_MSR_PWR_UNIT                0xC0010299
-#define AMD_MSR_CORE_ENERGY             0xC001029A
-#define AMD_MSR_PACKAGE_ENERGY          0xC001029B
-#define AMD_TIME_UNIT_MASK              0xF0000
-#define AMD_ENERGY_UNIT_MASK            0x1F00
-#define AMD_POWER_UNIT_MASK             0xF
-
-#define MAX_CORES                       32
-
 #define READ_SMN_V1(offs) { if (smu_read_smn_addr(&obj, offs + offset, &value1) != SMU_Return_OK) goto _READ_ERROR; }
 #define READ_SMN_V2(offs) { if (smu_read_smn_addr(&obj, offs + offset, &value2) != SMU_Return_OK) goto _READ_ERROR; }
 
