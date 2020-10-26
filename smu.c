@@ -147,87 +147,96 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
 }
 
 int smu_resolve_cpu_class(struct pci_dev* dev) {
-    u32 cpuid, e_model, pkg_type;
+    u32 cpuid,cpu_family, cpu_model, stepping, pkg_type;
 
-    // Combines BaseModel + ExtModel + ExtFamily + Reserved
+    // https://en.wikichip.org/wiki/amd/cpuid
+    // Res. + ExtFamily + ExtModel + Res. + BaseFamily + BaseModel + Stepping
     // See: CPUID_Fn00000001_EAX
     cpuid = cpuid_eax(0x00000001);
-    e_model = ((cpuid & 0xff) >> 4) + ((cpuid >> 12) & 0xf0);
+
+    cpu_family = ((cpuid & 0xf00) >> 8) + ((cpuid & 0xff00000) >> 20);
+    cpu_model = ((cpuid & 0xf0000) >> 12) + ((cpuid & 0xf0) >> 4);
+    stepping = cpuid & 0xf;
 
     // Combines "PkgType" and "Reserved"
     // See: CPUID_Fn80000001_EBX
     pkg_type = cpuid_ebx(0x80000001) >> 28;
 
-    // The following is a direct recreating of what Ryzen Master
-    //  uses to determine each processor model.
-    // In the case where multiple CPUs of the same family releases,
-    //  this should technically allow us to detect all future models.
-    if (e_model <= 0xF && pkg_type == 2) {
-        if (e_model == 1)
-            g_smu.codename = CODENAME_SUMMITRIDGE;
-        else {
-            if (e_model != 8) {
-                pr_err("cpuid: failed to detect processor codename (1)");
-                return -1;
-            }
+    pr_info("CPUID: family 0x%X model 0x%X stepping 0x%X package 0x%X",
+             cpu_family, cpu_model, stepping, pkg_type);
 
-            g_smu.codename = CODENAME_PINNACLERIDGE;
+    // Zen / Zen+ / Zen2
+    if (cpu_family == 0x17) {
+        switch(cpu_model) {
+            case 0x01:
+                if (pkg_type == 7)
+                    g_smu.codename = CODENAME_THREADRIPPER;
+                else
+                    g_smu.codename = CODENAME_SUMMITRIDGE;
+                break;
+            case 0x08:
+                if (pkg_type == 7)
+                    g_smu.codename = CODENAME_COLFAX;
+                else
+                    g_smu.codename = CODENAME_PINNACLERIDGE;
+                break;
+            case 0x11:
+                g_smu.codename = CODENAME_RAVENRIDGE;
+                break;
+            case 0x18:
+                if (pkg_type == 2)
+                    g_smu.codename = CODENAME_RAVENRIDGE2;
+                else
+                    g_smu.codename = CODENAME_PICASSO;
+                break;
+            case 0x20:
+                g_smu.codename = CODENAME_DALI;
+                break;
+            case 0x31:
+                g_smu.codename = CODENAME_CASTLEPEAK;
+                break;
+            case 0x60:
+                g_smu.codename = CODENAME_RENOIR;
+                break;
+            case 0x71:
+                g_smu.codename = CODENAME_MATISSE;
+                break;
+            case 0x90:
+                g_smu.codename = CODENAME_VANGOGH;
+                break;
+            default:
+                pr_err("CPUID: Unknown Zen/Zen+/Zen2 processor model 0x%X (CPUID: 0x%08X)", cpu_model, cpuid);
+                return -2;
         }
+        return 0;
     }
-    else if (e_model - 0x70 <= 0xF && pkg_type == 2)
-        g_smu.codename = CODENAME_MATISSE;
-    else if (e_model - 48 <= 0xF && pkg_type == 7)
-        g_smu.codename = CODENAME_CASTLEPEAK;
-    else if (e_model <= 0xF && pkg_type == 7) {
-        if (e_model == 8)
-            g_smu.codename = CODENAME_COLFAX;
-        else
-            g_smu.codename = CODENAME_THREADRIPPER;
-    }
-    else if (e_model - 16 > 0x1f) {
-        if (e_model - 96 > 0xf) {
-            pr_err("cpuid: failed to detect processor codename (2)");
-            return -2;
+
+    // Zen3 (model IDs for unreleased silicon not comirmed yet)
+    else if (cpu_family == 0x19) {
+        switch(cpu_model) {
+            case 0x00:
+                g_smu.codename = CODENAME_MILAN;
+                break;
+            case 0x20:
+                g_smu.codename = CODENAME_VERMEER;
+                break;
+            case 0x40:
+                g_smu.codename = CODENAME_REMBRANT;
+                break;
+            case 0x50:
+                g_smu.codename = CODENAME_CEZANNE;
+                break;
+            default:
+                pr_err("CPUID: Unknown Zen3 processor model 0x%X (CPUID: 0x%08X)", cpu_model, cpuid);
+                return -2;
         }
-
-        g_smu.codename = CODENAME_RENOIR;
-    }
-    else if (e_model & 0xFFFFFFE0 || e_model == 24) {
-        if (((smu_read_address(dev, 0x5D5C0) >> 30) - 1) & 0xfffffffd || pkg_type != 2) {
-            if (e_model != 24) {
-                pr_err("cpuid: failed to detect processor codename (3)");
-                return -3;
-            }
-
-            g_smu.codename = CODENAME_PICASSO;
-        }
-        else
-            g_smu.codename = CODENAME_RAVENRIDGE2;
-    }
-    else if (e_model <= 0x1F && pkg_type == 2)
-        g_smu.codename = CODENAME_RAVENRIDGE;
-    else switch(cpuid & 0xFFF0F00) {
-        case 0x00A20F00:
-            g_smu.codename = CODENAME_VERMEER;
-            break;
-        case 0x00A50F00:
-            g_smu.codename = CODENAME_CEZANNE;
-            break;
-        case 0x00A40F00:
-            g_smu.codename = CODENAME_REMBRANT;
-            break;
-        case 0x00890F00:
-            g_smu.codename = CODENAME_VANGOGH;
-            break;
-        case 0x00A00F00:
-            g_smu.codename = CODENAME_MILAN;
-            break;
-        default:
-            pr_err("cpuid: failed to detect processor codename (4)");
-            return -4;
+        return 0;
     }
 
-    return 0;
+    else {
+        pr_err("CPUID: failed to detect Zen/Zen+/Zen2/Zen3 processor familly");
+        return -1;
+    }
 }
 
 int smu_init(struct pci_dev* dev) {
@@ -259,6 +268,7 @@ int smu_init(struct pci_dev* dev) {
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE:
         case CODENAME_RAVENRIDGE2:
+        case CODENAME_DALI:
             g_smu.addr_rsmu_mb_cmd  = 0x3B10A20;
             g_smu.addr_rsmu_mb_rsp  = 0x3B10A80;
             g_smu.addr_rsmu_mb_args = 0x3B10A88;
@@ -291,6 +301,7 @@ int smu_init(struct pci_dev* dev) {
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE:
         case CODENAME_RAVENRIDGE2:
+        case CODENAME_DALI:
             g_smu.mp1_if_ver        = IF_VERSION_10;
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10564;
@@ -379,6 +390,7 @@ u64 smu_get_dram_base_address(struct pci_dev* dev) {
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE:
         case CODENAME_RAVENRIDGE2:
+        case CODENAME_DALI:
             fn[0] = 0x0a;
             fn[1] = 0x3d;
             fn[2] = 0x0b;

@@ -22,6 +22,7 @@ The following processor code names are supported:
 - Vangogh
 - Cezanne
 - Milan
+- Dali
 
 In addition, for the following models, the PM table can also be accessed:
 
@@ -200,6 +201,7 @@ enumeration:
 | 0Dh | 13      | Vangogh        |
 | 0Eh | 14      | Cezanne        |
 | 0Fh | 15      | Milan          |
+| 10h | 16      | Dali           |
 
 Note: This file returns 2 characters of the 'Decimal' encoded index.
 

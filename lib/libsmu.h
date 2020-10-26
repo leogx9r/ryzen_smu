@@ -84,6 +84,7 @@ typedef enum {
     CODENAME_VANGOGH,
     CODENAME_CEZANNE,
     CODENAME_MILAN,
+    CODENAME_DALI,
 
     CODENAME_COUNT
 } smu_processor_codename;
