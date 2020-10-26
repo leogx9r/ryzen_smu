@@ -38,12 +38,19 @@
 #define PM_SIZE_PATH                    DRIVER_CLASS_PATH "pm_table_size"
 #define PM_PATH                         DRIVER_CLASS_PATH "pm_table"
 
-/* Maximum is defined as: "255.255.255\n" */
-#define MAX_SMU_VERSION_LEN             12
+/* Maximum is defined as: "255.255.255.255\n" */
+#define MAX_SMU_VERSION_LEN             16
 
 int try_open_path(const char* pathname, int mode, int* fd) {
+    int ret = 1;
+
     *fd = open(pathname, mode);
-    return *fd != -1;
+
+    // Reset fd to zero to avoid attempting to close a -1 file descriptor.
+    if (*fd == -1)
+        ret = *fd = 0;
+
+    return ret;
 }
 
 smu_return_val smu_init_parse(smu_obj_t* obj) {
@@ -102,19 +109,20 @@ smu_return_val smu_init_parse(smu_obj_t* obj) {
         obj->codename >= CODENAME_COUNT)
         return SMU_Return_Unsupported;
 
-    // MP1 version may also be present but only if MP1 is actually enabled.
-    if (try_open_path(IF_VERSION_PATH, O_RDONLY, &tmp_fd)) {
-        // This only specifies an enumeration for the IF version.
-        ret = read(tmp_fd, rd_buf, sizeof(rd_buf));
-        close(tmp_fd);
+    // MP1 version must also be present.
+    if (!try_open_path(IF_VERSION_PATH, O_RDONLY, &tmp_fd))
+        return SMU_Return_DriverNotPresent;
 
-        if (ret < 0)
-            return SMU_Return_RWError;
+    // This only specifies an enumeration for the IF version.
+    ret = read(tmp_fd, rd_buf, sizeof(rd_buf));
+    close(tmp_fd);
 
-        ret = sscanf(rd_buf, "%d\n", (int*)&obj->smu_if_version);
-        if (ret == EOF || ret > 3)
-            return SMU_Return_RWError;
-    }
+    if (ret < 0)
+        return SMU_Return_RWError;
+
+    ret = sscanf(rd_buf, "%d\n", (int*)&obj->smu_if_version);
+    if (ret == EOF || ret > 3)
+        return SMU_Return_RWError;
 
     // This file doesn't need to exist if PM Tables aren't supported.
     if (!try_open_path(PM_VERSION_PATH, O_RDONLY, &tmp_fd))
@@ -151,15 +159,17 @@ int smu_init(smu_obj_t* obj) {
 
     // The driver must provide access to these files.
     if (!try_open_path(SMN_PATH, O_RDWR, &obj->fd_smn) ||
-        !try_open_path(RSMU_CMD_PATH, O_RDWR, &obj->fd_rsmu_cmd) ||
         !try_open_path(MP1_SMU_CMD_PATH, O_RDWR, &obj->fd_mp1_smu_cmd) ||
         !try_open_path(SMU_ARG_PATH, O_RDWR, &obj->fd_smu_args))
         return SMU_Return_RWError;
 
-    // This file may optionally exist only if PM tables are supported.
-    if (smu_pm_tables_supported(obj) &&
-        !try_open_path(PM_PATH, O_RDONLY, &obj->fd_pm_table))
-        return SMU_Return_RWError;
+    // RSMU is optionally supported for some codenames.
+    if (try_open_path(RSMU_CMD_PATH, O_RDWR, &obj->fd_rsmu_cmd)) {
+        // This file may optionally exist only if PM tables are supported AND RSMU as well.
+        if (smu_pm_tables_supported(obj) &&
+            !try_open_path(PM_PATH, O_RDONLY, &obj->fd_pm_table))
+            return SMU_Return_RWError;
+    }
 
     for (i = 0; i < SMU_MUTEX_COUNT; i++)
         pthread_mutex_init(&obj->lock[i], NULL);
@@ -262,6 +272,10 @@ smu_return_val smu_send_command(smu_obj_t* obj, unsigned int op, smu_arg_t args,
         default:
             return SMU_Return_Unsupported;
     }
+
+    // Check if fd is valid
+    if (!fd_smu_cmd)
+        return SMU_Return_Unsupported;
 
     pthread_mutex_lock(&obj->lock[SMU_MUTEX_CMD]);
 
