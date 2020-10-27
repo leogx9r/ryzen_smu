@@ -490,6 +490,7 @@ enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) 
      */
     switch (g_smu.codename) {
         case CODENAME_RAVENRIDGE:
+        case CODENAME_PICASSO:
             fn = 0x0c;
             break;
         case CODENAME_MATISSE:
