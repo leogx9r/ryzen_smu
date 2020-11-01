@@ -561,10 +561,14 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
                         g_smu.pm_dram_map_size = 0x884;
                         break;
                     case 0x370002:
-                        g_smu.pm_dram_map_size = 0x88C;
-                        break;
                     case 0x370003:
                         g_smu.pm_dram_map_size = 0x88C;
+                        break;
+                    case 0x370004:
+                        g_smu.pm_dram_map_size = 0x8AC;
+                        break;
+                    case 0x370005:
+                        g_smu.pm_dram_map_size = 0x8C8;
                         break;
                     default:
                         goto UNKNOWN_PM_TABLE_VERSION;

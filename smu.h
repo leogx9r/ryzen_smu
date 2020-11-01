@@ -21,7 +21,7 @@
  */
 
 /* Maximum size in bytes, of the PM table for Matisse, Renoir, Picasso & RavenRidge 2 */
-#define PM_TABLE_MAX_SIZE                             0x88C
+#define PM_TABLE_MAX_SIZE                             0x8C8
 
 /* Specifies the range on how often, in milliseconds, to command the SMU to update the PM table. */
 #define PM_TABLE_MAX_UPDATE_TIME_MS                   60000
