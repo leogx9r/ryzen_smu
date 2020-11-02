@@ -27,6 +27,7 @@ MODULE_LICENSE("GPL");
 #define PCI_DEVICE_ID_AMD_17H_M10H_ROOT    0x15d0
 #define PCI_DEVICE_ID_AMD_17H_M60H_ROOT    0x1630
 #define PCI_DEVICE_ID_AMD_17H_M30H_ROOT    0x1480
+#define PCI_DEVICE_ID_AMD_19H_DF_F4	       0x1654
 
 #define MAX_ATTRS_LEN                      11
 
@@ -47,7 +48,7 @@ static struct ryzen_smu_data {
     struct kobject*         drv_kobj;
 
     char                    smu_version[64];
-    u32                     smu_args[6];
+    smu_req_args_t          smu_args;
     u32                     smu_rsp;
 
     u32                     smn_result;
@@ -61,7 +62,7 @@ static struct ryzen_smu_data {
     .drv_kobj             = NULL,
 
     .smu_version          = { 0 },
-    .smu_args             = { 0, 0, 0, 0, 0, 0 },
+    .smu_args             = { .args = { 0, 0, 0, 0, 0, 0 } },
     .smu_rsp              = SMU_Return_OK,
 
     .smn_result           = 0,
@@ -138,7 +139,7 @@ static ssize_t rsmu_cmd_store(struct kobject *kobj, struct kobj_attribute *attr,
             return 0;
     }
 
-    g_driver.smu_rsp = smu_send_command(g_driver.device, op, g_driver.smu_args, 6, MAILBOX_TYPE_RSMU);
+    g_driver.smu_rsp = smu_send_command(g_driver.device, op, &g_driver.smu_args, MAILBOX_TYPE_RSMU);
     return count;
 }
 
@@ -165,14 +166,14 @@ static ssize_t mp1_smu_cmd_store(struct kobject *kobj, struct kobj_attribute *at
             return 0;
     }
 
-    g_driver.smu_rsp = smu_send_command(g_driver.device, op, g_driver.smu_args, 6, MAILBOX_TYPE_MP1);
+    g_driver.smu_rsp = smu_send_command(g_driver.device, op, &g_driver.smu_args, MAILBOX_TYPE_MP1);
     return count;
 }
 
 static ssize_t smu_args_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
     ssize_t sz = sizeof(g_driver.smu_args);
 
-    memcpy(buff, &g_driver.smu_args, sz);
+    memcpy(buff, &g_driver.smu_args.args, sz);
     return sz;
 }
 
@@ -180,7 +181,7 @@ static ssize_t smu_args_store(struct kobject *kobj, struct kobj_attribute *attr,
     if (count != sizeof(u32) * 6)
         return 0;
 
-    memcpy(g_driver.smu_args, buff, count);
+    memcpy(g_driver.smu_args.args, buff, count);
     return count;
 }
 
@@ -263,6 +264,7 @@ static int ryzen_smu_get_version(enum smu_mailbox mb, int show) {
         return -EINVAL;
     }
 
+    // In case this just tests for mailbox functionality, we don't need to output anything.
     if (show) {
         if (ver & 0xFF000000)
             sprintf(g_driver.smu_version, "%d.%d.%d.%d",
@@ -317,7 +319,7 @@ static int ryzen_smu_probe(struct pci_dev *dev, const struct pci_device_id *id) 
         drv_attrs[MAX_ATTRS_LEN - 5] = &dev_attr_rsmu_cmd.attr;
     }
     else {
-        pr_info("RSMU mailbox disabled");
+        pr_info("RSMU mailbox disabled.");
         goto _CONTINUE_SETUP;
     }
 
@@ -361,7 +363,7 @@ _CONTINUE_SETUP:
     g_driver.drv_kobj = kobject_create_and_add("ryzen_smu_drv", kernel_kobj);
     if (!g_driver.drv_kobj) {
         pr_err("Unable to create sysfs interface");
-        return -EINVAL;
+        return -ENOMEM;
     }
 
     if (sysfs_create_group(g_driver.drv_kobj, &drv_attr_group))
@@ -376,7 +378,7 @@ static void ryzen_smu_remove(struct pci_dev *dev) {
         kfree(g_driver.pm_table);
 
     if (g_driver.drv_kobj)
-        kobject_del(g_driver.drv_kobj);
+        kobject_put(g_driver.drv_kobj);
 
     smu_cleanup();
 }
@@ -386,6 +388,7 @@ static struct pci_device_id ryzen_smu_id_table[] = {
     { PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_17H_M10H_ROOT) },
     { PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_17H_M30H_ROOT) },
     { PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_17H_M60H_ROOT) },
+    { PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_19H_DF_F4) },
     { }
 };
 MODULE_DEVICE_TABLE(pci, ryzen_smu_id_table);
@@ -399,7 +402,7 @@ static struct pci_driver ryzen_smu_driver = {
 
 static int __init ryzen_smu_driver_init(void) {
     // By default the driver will not be used to communicate with the
-    //  northbridge so we forcefully tell the system to use it
+    //  northbridge so we forcefully tell the system to use it.
     if (pci_register_driver(&ryzen_smu_driver) < 0) {
         pr_err("Failed to register the PCI driver.");
         return 1;

@@ -58,6 +58,7 @@ static DEFINE_MUTEX(amd_smu_mutex);
 u32 smu_read_address(struct pci_dev* dev, u32 address) {
     u32 ret;
 
+    // This may work differently for multi-NUMA systems.
     mutex_lock(&amd_pci_mutex);
     pci_write_config_dword(dev, SMU_PCI_ADDR_REG, address);
     pci_read_config_dword(dev, SMU_PCI_DATA_REG, &ret);
@@ -73,7 +74,16 @@ void smu_write_address(struct pci_dev* dev, u32 address, u32 value) {
     mutex_unlock(&amd_pci_mutex);
 }
 
-enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32 n_args,
+void smu_args_init(smu_req_args_t* args, u32 value) {
+    u32 i;
+
+    args->args[0] = value;
+
+    for (i = 1; i < SMU_REQ_MAX_ARGS; i++)
+        args->args[i] = 0;
+}
+
+enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, smu_req_args_t* args,
     enum smu_mailbox mailbox) {
     u32 retries, tmp, i, rsp_addr, args_addr, cmd_addr;
 
@@ -97,6 +107,9 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
     if (!rsp_addr || !cmd_addr || !args_addr)
         return SMU_Return_Unsupported;
 
+    pr_debug("SMU Service Request: ID(0x%x) Args(0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x)",
+        op, args->s.arg0, args->s.arg1, args->s.arg2, args->s.arg3, args->s.arg4, args->s.arg5);
+
     mutex_lock(&amd_smu_mutex);
 
     // Step 1: Wait until the RSP register is non-zero.
@@ -109,6 +122,8 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
     //  a new command cannot be issued.
     if (!retries && !tmp) {
         mutex_unlock(&amd_smu_mutex);
+        pr_debug("SMU Service Request Failed: Timeout on initial wait for mailbox availability.");
+
         return SMU_Return_CommandTimeout;
     }
 
@@ -116,10 +131,8 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
     smu_write_address(dev, rsp_addr, 0);
 
     // Step 3: Write the argument(s) into the argument register(s)
-    for (i = 0; i < 6; i++) {
-        tmp = i >= n_args ? 0 : args[i];
-        smu_write_address(dev, args_addr + (i * 4), tmp);
-    }
+    for (i = 0; i < SMU_REQ_MAX_ARGS; i++)
+        smu_write_address(dev, args_addr + (i * 4), args->args[i]);
 
     // Step 4: Write the message Id into the Message ID register
     smu_write_address(dev, cmd_addr, op);
@@ -133,15 +146,27 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32
     //  the message.
     if (tmp != SMU_Return_OK && !retries) {
         mutex_unlock(&amd_smu_mutex);
-        return tmp == 0 ? SMU_Return_CommandTimeout : tmp;
+
+        if (!tmp) {
+            pr_debug("SMU Service Request Failed: Timeout on command (0x%x) after %d attempts.",
+                op, smu_timeout_attempts);
+
+            return SMU_Return_CommandTimeout;
+        }
+
+        pr_debug("SMU Service Request Failed: Response %Xh was unexpected.", tmp);
+        return tmp;
     }
 
     // Step 7: If a return argument is expected, the Argument register may be read
     //  at this time.
-    for (i = 0; i < n_args; i++)
-        args[i] = smu_read_address(dev, args_addr + (i * 4));
+    for (i = 0; i < SMU_REQ_MAX_ARGS; i++)
+        args->args[i] = smu_read_address(dev, args_addr + (i * 4));
 
     mutex_unlock(&amd_smu_mutex);
+
+    pr_debug("SMU Service Response: ID(0x%x) Args(0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x)",
+        op, args->s.arg0, args->s.arg1, args->s.arg2, args->s.arg3, args->s.arg4, args->s.arg5);
 
     return SMU_Return_OK;
 }
@@ -205,7 +230,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
                 g_smu.codename = CODENAME_VANGOGH;
                 break;
             default:
-                pr_err("CPUID: Unknown Zen/Zen+/Zen2 processor model 0x%X (CPUID: 0x%08X)", cpu_model, cpuid);
+                pr_err("CPUID: Unknown Zen/Zen+/Zen2 processor model: 0x%X (CPUID: 0x%08X)", cpu_model, cpuid);
                 return -2;
         }
         return 0;
@@ -227,7 +252,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
                 g_smu.codename = CODENAME_CEZANNE;
                 break;
             default:
-                pr_err("CPUID: Unknown Zen3 processor model 0x%X (CPUID: 0x%08X)", cpu_model, cpuid);
+                pr_err("CPUID: Unknown Zen3 processor model: 0x%X (CPUID: 0x%08X)", cpu_model, cpuid);
                 return -2;
         }
         return 0;
@@ -240,6 +265,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
 }
 
 int smu_init(struct pci_dev* dev) {
+    // This really should never be called twice however in case it is, consider it initialized.
     if (g_smu.codename != CODENAME_UNDEFINED)
         return 0;
 
@@ -355,15 +381,19 @@ enum smu_processor_codename smu_get_codename(void) {
 }
 
 u32 smu_get_version(struct pci_dev* dev, enum smu_mailbox mb) {
-    u32 args[6] = { 1, 0, 0, 0, 0, 0 }, ret;
+    smu_req_args_t args;
+    u32 ret;
+
+    // First value is always 1.
+    smu_args_init(&args, 1);
 
     // OP 0x02 is consistent with all platforms meaning
     //  it can be used directly.
-    ret = smu_send_command(dev, 0x02, args, 1, mb);
+    ret = smu_send_command(dev, 0x02, &args, mb);
     if (ret != SMU_Return_OK)
         return ret;
 
-    return args[0];
+    return args.s.arg0;
 }
 
 enum smu_if_version smu_get_mp1_if_version(void) {
@@ -371,7 +401,9 @@ enum smu_if_version smu_get_mp1_if_version(void) {
 }
 
 u64 smu_get_dram_base_address(struct pci_dev* dev) {
-    u32 args[6] = { 0, 0, 0, 0, 0, 0 }, fn[3], ret, parts[2];
+    u32 fn[3], ret, parts[2];
+    smu_req_args_t args;
+
     const enum smu_mailbox type = MAILBOX_TYPE_RSMU;
 
     switch (g_smu.codename) {
@@ -399,58 +431,66 @@ u64 smu_get_dram_base_address(struct pci_dev* dev) {
             return SMU_Return_Unsupported;
     }
 
-BASE_ADDR_CLASS_1:
-    args[0] = args[1] = 1;
-    ret = smu_send_command(dev, fn[0], args, 2, type);
+    smu_args_init(&args, 0);
 
-    return ret != SMU_Return_OK ? ret : args[0] | ((u64)args[1] << 32);
+BASE_ADDR_CLASS_1:
+    args.s.arg0 = args.s.arg1 = 1;
+    ret = smu_send_command(dev, fn[0], &args, type);
+
+    return ret != SMU_Return_OK ? ret : args.s.arg0 | ((u64)args.s.arg1 << 32);
 
 BASE_ADDR_CLASS_2:
-    ret = smu_send_command(dev, fn[0], args, 1, type);
+    ret = smu_send_command(dev, fn[0], &args, type);
     if (ret != SMU_Return_OK)
         return ret;
 
-    ret = smu_send_command(dev, fn[1], args, 1, type);
+    smu_args_init(&args, 0);
+    ret = smu_send_command(dev, fn[1], &args, type);
 
-    return ret != SMU_Return_OK ? ret : args[0];
+    return ret != SMU_Return_OK ? ret : args.s.arg0;
 
 BASE_ADDR_CLASS_3:
-    args[0] = 3;
-    ret = smu_send_command(dev, fn[0], args, 1, type);
+    // == Part 1 ==
+    args.s.arg0 = 3;
+    ret = smu_send_command(dev, fn[0], &args, type);
     if (ret != SMU_Return_OK)
         return ret;
 
-    args[0] = 3;
-    ret = smu_send_command(dev, fn[2], args, 1, type);
+    smu_args_init(&args, 3);
+    ret = smu_send_command(dev, fn[2], &args, type);
     if (ret != SMU_Return_OK)
         return ret;
 
     // 1st Base.
-    parts[0] = args[0];
+    parts[0] = args.s.arg0;
+    // == Part 1 End ==
 
-    args[0] = 3;
-    ret = smu_send_command(dev, fn[1], args, 1, type);
+    // == Part 2 ==
+    smu_args_init(&args, 3);
+    ret = smu_send_command(dev, fn[1], &args, type);
     if (ret != SMU_Return_OK)
         return ret;
 
-    args[0] = 5;
-    ret = smu_send_command(dev, fn[0], args, 1, type);
+    smu_args_init(&args, 5);
+    ret = smu_send_command(dev, fn[0], &args, type);
     if (ret != SMU_Return_OK)
         return ret;
 
-    args[0] = 5;
-    ret = smu_send_command(dev, fn[2], args, 1, type);
+    smu_args_init(&args, 5);
+    ret = smu_send_command(dev, fn[2], &args, type);
     if (ret != SMU_Return_OK)
         return ret;
 
     // 2nd base.
-    parts[1] = args[0];
+    parts[1] = args.s.arg0;
+    // == Part 2 End ==
 
     return (u64)parts[1] << 32 | parts[0];
 }
 
 enum smu_return_val smu_transfer_table_to_dram(struct pci_dev* dev) {
-    u32 args[6] = { 0, 0, 0, 0, 0, 0 }, fn;
+    smu_req_args_t args;
+    u32 fn;
 
     /**
      * Probes (updates) the PM Table.
@@ -458,29 +498,32 @@ enum smu_return_val smu_transfer_table_to_dram(struct pci_dev* dev) {
      * Physically mapped at the DRAM Base address(es).
      */
 
+    smu_args_init(&args, 0);
+
     switch (g_smu.codename) {
         case CODENAME_MATISSE:
-            args[0] = 0;
             fn = 0x05;
             break;
         case CODENAME_RENOIR:
-            args[0] = 3;
+            args.s.arg0 = 3;
             fn = 0x65;
             break;
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE:
         case CODENAME_RAVENRIDGE2:
-            args[0] = 3;
+            args.s.arg0 = 3;
             fn = 0x3d;
             break;
         default:
             return SMU_Return_Unsupported;
     }
 
-    return smu_send_command(dev, fn, args, 1, MAILBOX_TYPE_RSMU);
+    return smu_send_command(dev, fn, &args, MAILBOX_TYPE_RSMU);
 }
 
 enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) {
+    enum smu_return_val ret;
+    smu_req_args_t args;
     u32 fn;
 
     /**
@@ -503,8 +546,12 @@ enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) 
             return SMU_Return_Unsupported;
     }
 
-    *version = 0;
-    return smu_send_command(dev, fn, version, 1, MAILBOX_TYPE_RSMU);
+    smu_args_init(&args, 0);
+
+    ret = smu_send_command(dev, fn, &args, MAILBOX_TYPE_RSMU);
+    *version = args.s.arg0;
+
+    return ret;
 }
 
 enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, size_t* len) {

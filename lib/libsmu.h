@@ -135,9 +135,23 @@ typedef struct {
 typedef union {
     struct {
         float                   args0_f;
-        unsigned int            args1_5[5];
-    };
+        float                   args1_f;
+        float                   args2_f;
+        float                   args3_f;
+        float                   args4_f;
+        float                   args5_f;
+    } f;
+    struct {
+        unsigned int            args0;
+        unsigned int            args1;
+        unsigned int            args2;
+        unsigned int            args3;
+        unsigned int            args4;
+        unsigned int            args5;
+    } i;
+
     unsigned int                args[6];
+    float                       args_f[6];
 } smu_arg_t;
 
 /**

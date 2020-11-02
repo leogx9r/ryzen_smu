@@ -20,7 +20,7 @@
  *  limitations of the processor.
  */
 
-/* Maximum size in bytes, of the PM table for Matisse, Renoir, Picasso & RavenRidge 2 */
+/* Maximum size in bytes, of the PM table for any processor codename. */
 #define PM_TABLE_MAX_SIZE                             0x8C8
 
 /* Specifies the range on how often, in milliseconds, to command the SMU to update the PM table. */
@@ -31,9 +31,12 @@
 #define SMU_RETRIES_MAX                               32768
 #define SMU_RETRIES_MIN                               500
 
-/* PCI Query Registers. [0x60,0x64] & [0xB4, 0xB8] also work. */
+/* PCI Query Registers. [0x60, 0x64] & [0xB4, 0xB8] also work. */
 #define SMU_PCI_ADDR_REG                              0xC4
 #define SMU_PCI_DATA_REG                              0xC8
+
+/* Maximum number of 32-bit arguments an SMU command shall have. */
+#define SMU_REQ_MAX_ARGS                              6
 
 /**
  * Return values that can be sent from the SMU in response to a command.
@@ -107,6 +110,21 @@ enum smu_mailbox {
     MAILBOX_TYPE_COUNT
 };
 
+/**
+ * SMU Service Request Arguments
+ */
+typedef union {
+    struct {
+        u32 arg0;
+        u32 arg1;
+        u32 arg2;
+        u32 arg3;
+        u32 arg4;
+        u32 arg5;
+    }   s;
+    u32 args[SMU_REQ_MAX_ARGS];
+} smu_req_args_t;
+
 /* Parameters for SMU execution. */
 extern uint smu_pm_use_timer;
 extern uint smu_pm_update_ns;
@@ -136,13 +154,19 @@ u32 smu_read_address(struct pci_dev* dev, u32 address);
 void smu_write_address(struct pci_dev* dev, u32 address, u32 value);
 
 /**
+ * Initializes an SMU REQ ARG structure with zeros.
+ * The argument [value] is set as the first argument set for the request.
+ */
+void smu_args_init(smu_req_args_t* args, u32 value);
+
+/**
  * Performs an SMU request with up to 6 arguments specified in the args array.
  * Results are returned in the args array if the request succeeds with, up to
  *  n_args being read back.
  *
  * Returns an smu_return_val indicating the status of the operation.
  */
-enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, u32* args, u32 n_args,
+enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, smu_req_args_t* args,
     enum smu_mailbox mailbox);
 
 /**
