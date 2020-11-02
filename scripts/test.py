@@ -173,7 +173,13 @@ def test_get_codename():
         "Raven Ridge",
         "Raven Ridge 2",
         "Summit Ridge",
-        "Pinnacle Ridge"
+        "Pinnacle Ridge",
+        "Rembrant",
+        "Vermeer",
+        "Vangogh",
+        "Cezanne",
+        "Milan",
+        "Dali"
     ]
     args = read_file_str(CN_PATH, 3)
 

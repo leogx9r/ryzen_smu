@@ -29,17 +29,5 @@ def dump_float():
         print("0x{:04X} -> {:8.6f}".format(i, v))
         i = i + 4
 
-def dump_double():
-    c = read_pm()
-    size = len(c)
-
-    i = 0
-    while i < size:
-        v = read_double(c, i)
-        print("0x{:04X} -> {:8.6f}".format(i, v))
-        i = i + 8
-
 
 dump_float()
-#dump_double()
-#test_pwr()
