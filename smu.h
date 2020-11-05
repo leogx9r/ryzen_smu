@@ -31,7 +31,7 @@
 #define SMU_RETRIES_MAX                               32768
 #define SMU_RETRIES_MIN                               500
 
-/* PCI Query Registers. [0x60, 0x64] & [0xB4, 0xB8] also work. */
+/* PCI Query Registers. [0x60, 0x64] & [0xB4, 0xB8] also work. These may be arch-specific. */
 #define SMU_PCI_ADDR_REG                              0xC4
 #define SMU_PCI_DATA_REG                              0xC8
 
@@ -148,7 +148,7 @@ void smu_cleanup(void);
 enum smu_processor_codename smu_get_codename(void);
 
 /**
- * Reads or writes 32 bit words to the SMU.
+ * Reads or writes 32 bit words to the SMU on the root NB PCI device.
  */
 u32 smu_read_address(struct pci_dev* dev, u32 address);
 void smu_write_address(struct pci_dev* dev, u32 address, u32 value);
@@ -160,9 +160,11 @@ void smu_write_address(struct pci_dev* dev, u32 address, u32 value);
 void smu_args_init(smu_req_args_t* args, u32 value);
 
 /**
- * Performs an SMU request with up to 6 arguments specified in the args array.
- * Results are returned in the args array if the request succeeds with, up to
- *  n_args being read back.
+ * Performs an SMU service request with the specified arguments. [op] provides an 8-bit command ID,
+ *   [args] specifies up to 6 command arguments that may be used and [mailbox] specifies the
+ *   destination.
+ *
+ * Results are returned in the args array upon a service request being completed.
  *
  * Returns an smu_return_val indicating the status of the operation.
  */
