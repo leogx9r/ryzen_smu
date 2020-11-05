@@ -24,13 +24,14 @@ The following processor code names are supported:
 - Milan
 - Dali
 
-In addition, for the following models, the PM table can also be accessed:
+In addition, for the following models, the power metrics/monitoring (PM) table can also be accessed:
 
-- Matisse
-- Renoir
-- Picasso
-- Raven Ridge
-- Raven Ridge 2
+- [Vermeer](https://en.wikichip.org/wiki/amd/cores/vermeer) ( Ryzen 5000 Desktop Series )
+- [Matisse](https://en.wikichip.org/wiki/amd/cores/matisse) ( Ryzen 3000 Desktop Series )
+- [Renoir](https://en.wikichip.org/wiki/amd/cores/renoir)  ( Ryzen 4000[UGHS] APU Series )
+- [Picasso](https://en.wikichip.org/wiki/amd/cores/picasso) ( Ryzen 3000[UGHS] APU Series )
+- [Raven Ridge](https://en.wikichip.org/wiki/amd/cores/raven_ridge) ( Ryzen 2000[GEU] APU Series )
+- [Raven Ridge 2](https://www.techpowerup.com/gpu-specs/amd-raven-2.g888)
 
 When loaded, the driver exposes several files under sysfs which can only be read with root
 permissions (for obvious reasons):
@@ -43,7 +44,7 @@ permissions (for obvious reasons):
 - `/sys/kernel/ryzen_smu_drv/smn`
 - `/sys/kernel/ryzen_smu_drv/rsmu_cmd` (Not present on `Rembrant`, `Vangogh`, `Cezanne` and `Milan`)
 
-For supported PM table models where RSMU is also supported, the following files are additionally 
+For supported PM table models where RSMU is also supported, the following files are additionally
 exposed:
 
 - `/sys/kernel/ryzen_smu_drv/pm_table_version`
@@ -272,7 +273,9 @@ Note: File is a 64 bit word encoded in little-endian binary order.
 
 #### `/sys/kernel/ryzen_smu_drv/pm_table_version`
 
-On supported platforms, which are Matisse and Renoir systems, this lists the version of the PM table.
+On supported platforms, listed in the table below, this indicates the version of the metrics table.
+
+Each version corresponds to a specific table size and layout that differs across processors.
 
 The following table lists the known characteristics per version:
 
@@ -285,6 +288,10 @@ The following table lists the known characteristics per version:
 | 0x240803 | Matisse     | 0x7E4            |
 | 0x240902 | Matisse     | 0x514            |
 | 0x240903 | Matisse     | 0x518            |
+| 0x2D0803 | Vermeer     | 0x894            |
+| 0x380804 | Vermeer     | 0x8A4            |
+| 0x2D0903 | Vermeer     | 0x594            |
+| 0x380904 | Vermeer     | 0x5A4            |
 | 0x370000 | Renoir      | 0x794            |
 | 0x370001 | Renoir      | 0x884            |
 | 0x370002 | Renoir      | 0x88C            |
@@ -323,7 +330,7 @@ a good idea to leave this at its default value.
 
 ## Example Usage
 
-For Matisse processors, there are several commands that are known to work:
+For Matisse & Vermeer processors, there are several commands that are known to work:
 
 ```sh
 # Note: Does not persist across reboots

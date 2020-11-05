@@ -276,6 +276,7 @@ int smu_init(struct pci_dev* dev) {
     switch (g_smu.codename) {
         case CODENAME_CASTLEPEAK:
         case CODENAME_MATISSE:
+        case CODENAME_VERMEER:
             g_smu.addr_rsmu_mb_cmd  = 0x3B10524;
             g_smu.addr_rsmu_mb_rsp  = 0x3B10570;
             g_smu.addr_rsmu_mb_args = 0x3B10A40;
@@ -301,7 +302,6 @@ int smu_init(struct pci_dev* dev) {
             pr_debug("RSMU mailbox 3 selected for use");
             break;
             // Note: This **MAY** use the same mailbox as Matisse but untested at this time.
-        case CODENAME_VERMEER:
         case CODENAME_VANGOGH:
         case CODENAME_REMBRANT:
         case CODENAME_CEZANNE:
@@ -407,6 +407,7 @@ u64 smu_get_dram_base_address(struct pci_dev* dev) {
     const enum smu_mailbox type = MAILBOX_TYPE_RSMU;
 
     switch (g_smu.codename) {
+        case CODENAME_VERMEER:
         case CODENAME_MATISSE:
         case CODENAME_CASTLEPEAK:
             fn[0] = 0x06;
@@ -502,6 +503,7 @@ enum smu_return_val smu_transfer_table_to_dram(struct pci_dev* dev) {
 
     switch (g_smu.codename) {
         case CODENAME_MATISSE:
+        case CODENAME_VERMEER:
             fn = 0x05;
             break;
         case CODENAME_RENOIR:
@@ -537,6 +539,7 @@ enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) 
             fn = 0x0c;
             break;
         case CODENAME_MATISSE:
+        case CODENAME_VERMEER:
             fn = 0x08;
             break;
         case CODENAME_RENOIR:
@@ -569,7 +572,9 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
         }
 
         // Each model has different versions and sizes.
-        if (g_smu.codename == CODENAME_MATISSE || g_smu.codename == CODENAME_RENOIR) {
+        if (g_smu.codename == CODENAME_VERMEER ||
+            g_smu.codename == CODENAME_MATISSE ||
+            g_smu.codename == CODENAME_RENOIR) {
             ret = smu_get_pm_table_version(dev, &version);
 
             if (ret != SMU_Return_OK) {
@@ -597,6 +602,24 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
                     UNKNOWN_PM_TABLE_VERSION:
                         pr_err("Unknown PM table version: 0x%08X", version);
                         return SMU_Return_Unsupported;
+                }
+                break;
+            case CODENAME_VERMEER:
+                switch (version) {
+                    case 0x2D0903:
+                        g_smu.pm_dram_map_size = 0x594;
+                        break;
+                    case 0x380904:
+                        g_smu.pm_dram_map_size = 0x5A4;
+                        break;
+                    case 0x2D0803:
+                        g_smu.pm_dram_map_size = 0x894;
+                        break;
+                    case 0x380804:
+                        g_smu.pm_dram_map_size = 0x8A4;
+                        break;
+                    default:
+                        goto UNKNOWN_PM_TABLE_VERSION;
                 }
                 break;
             case CODENAME_RENOIR:
