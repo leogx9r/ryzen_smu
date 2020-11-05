@@ -21,6 +21,9 @@ ryzen_smu-objs		 	:= drv.o smu.o
 
 all: modules
 
+debug:
+	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) ccflags-y+=-DDEBUG modules
+
 modules:
 	@$(MAKE) -C $(KERNEL_BUILD) M=$(CURDIR) modules
 

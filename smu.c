@@ -280,7 +280,7 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_rsmu_mb_cmd  = 0x3B10524;
             g_smu.addr_rsmu_mb_rsp  = 0x3B10570;
             g_smu.addr_rsmu_mb_args = 0x3B10A40;
-            pr_debug("RSMU mailbox 1 selected for use");
+            pr_debug("RSMU Mailbox: v1 selected for use");
             break;
         case CODENAME_COLFAX:
         case CODENAME_SUMMITRIDGE:
@@ -289,7 +289,7 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_rsmu_mb_cmd  = 0x3B1051C;
             g_smu.addr_rsmu_mb_rsp  = 0x3B10568;
             g_smu.addr_rsmu_mb_args = 0x3B10590;
-            pr_debug("RSMU mailbox 2 selected for use");
+            pr_debug("RSMU Mailbox: v2 selected for use");
             break;
         case CODENAME_RENOIR:
         case CODENAME_PICASSO:
@@ -299,14 +299,14 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_rsmu_mb_cmd  = 0x3B10A20;
             g_smu.addr_rsmu_mb_rsp  = 0x3B10A80;
             g_smu.addr_rsmu_mb_args = 0x3B10A88;
-            pr_debug("RSMU mailbox 3 selected for use");
+            pr_debug("RSMU Mailbox: v3 selected for use");
             break;
             // Note: This **MAY** use the same mailbox as Matisse but untested at this time.
         case CODENAME_VANGOGH:
         case CODENAME_REMBRANT:
         case CODENAME_CEZANNE:
         case CODENAME_MILAN:
-            pr_debug("RSMU mailbox undefined for this processor. Disabling.");
+            pr_debug("RSMU Mailbox: Undefined during init. Disabling.");
             break;
         default:
             return -ENODEV;
@@ -322,7 +322,7 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10564;
             g_smu.addr_mp1_mb_args  = 0x3B10598;
-            pr_debug("MP1 mailbox v9 selected for use");
+            pr_debug("MP1 Mailbox: v9 selected for use");
             break;
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE:
@@ -332,7 +332,7 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10564;
             g_smu.addr_mp1_mb_args  = 0x3B10998;
-            pr_debug("MP1 mailbox v10 selected for use");
+            pr_debug("MP1 Mailbox: v10 selected for use");
             break;
         case CODENAME_MATISSE:
         case CODENAME_VERMEER:
@@ -341,14 +341,14 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_mp1_mb_cmd   = 0x3B10530;
             g_smu.addr_mp1_mb_rsp   = 0x3B1057C;
             g_smu.addr_mp1_mb_args  = 0x3B109C4;
-            pr_debug("MP1 mailbox v11 selected for use");
+            pr_debug("MP1 Mailbox: v11 selected for use");
             break;
         case CODENAME_RENOIR:
             g_smu.mp1_if_ver        = IF_VERSION_12;
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10564;
             g_smu.addr_mp1_mb_args  = 0x3B10998;
-            pr_debug("MP1 mailbox v12 selected for use");
+            pr_debug("MP1 Mailbox: v12 selected for use");
             break;
         case CODENAME_VANGOGH:
         case CODENAME_REMBRANT:
@@ -358,7 +358,7 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3b10578;
             g_smu.addr_mp1_mb_args  = 0x3B10998;
-            pr_debug("MP1 mailbox v13 selected for use");
+            pr_debug("MP1 Mailbox: v13 selected for use");
             break;
         default:
             return -ENODEV;
@@ -657,6 +657,8 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
             default:
                 return SMU_Return_Unsupported;
         }
+
+        pr_debug("Determined PM mapping size as (%xh,%xh) bytes", g_smu.pm_dram_map_size, g_smu.pm_dram_map_size_alt);
     }
 
     // Validate output buffer size
