@@ -25,6 +25,7 @@
 
 #define DRIVER_CLASS_PATH               "/sys/kernel/ryzen_smu_drv/"
 
+#define DRIVER_VERSION_PATH             DRIVER_CLASS_PATH "drv_version"
 #define VERSION_PATH                    DRIVER_CLASS_PATH "version"
 #define IF_VERSION_PATH                 DRIVER_CLASS_PATH "mp1_if_version"
 #define CODENAME_PATH                   DRIVER_CLASS_PATH "codename"
@@ -38,8 +39,11 @@
 #define PM_SIZE_PATH                    DRIVER_CLASS_PATH "pm_table_size"
 #define PM_PATH                         DRIVER_CLASS_PATH "pm_table"
 
+/* Maximum driver version length defined as "255.255.255\n" */
+#define LIBSMU_MAX_DRIVER_VERSION_LEN   12
+
 /* Maximum is defined as: "255.255.255.255\n" */
-#define MAX_SMU_VERSION_LEN             16
+#define LIBSMU_MAX_SMU_VERSION_LEN      16
 
 int try_open_path(const char* pathname, int mode, int* fd) {
     int ret = 1;
@@ -60,11 +64,29 @@ smu_return_val smu_init_parse(smu_obj_t* obj) {
 
     memset(rd_buf, 0, sizeof(rd_buf));
 
+    // Verify the driver version is expected.
+    if (!try_open_path(DRIVER_VERSION_PATH, O_RDONLY, &tmp_fd))
+        return SMU_Return_DriverNotPresent;
+
+    ret = read(tmp_fd, rd_buf, LIBSMU_MAX_DRIVER_VERSION_LEN);
+    close(tmp_fd);
+
+    if (ret < 0)
+        return SMU_Return_RWError;
+
+    // The driver version must match the expected exactly.
+    printf("rd_buf: %s", rd_buf);
+    if (strcmp(rd_buf, LIBSMU_SUPPORTED_DRIVER_VERSION "\n"))
+        return SMU_Return_DriverVersion;
+
+    sscanf(rd_buf, "%d.%d.%d\n", &ver_maj, &ver_min, &ver_rev);
+    obj->driver_version = ver_maj << 16 | ver_min << 8 | ver_rev;
+
     // The version of the SMU **MUST** be present.
     if (!try_open_path(VERSION_PATH, O_RDONLY, &tmp_fd))
         return SMU_Return_DriverNotPresent;
 
-    ret = read(tmp_fd, rd_buf, MAX_SMU_VERSION_LEN);
+    ret = read(tmp_fd, rd_buf, LIBSMU_MAX_SMU_VERSION_LEN);
     close(tmp_fd);
 
     if (ret < 0)
@@ -364,6 +386,8 @@ const char* smu_return_to_str(smu_return_val val) {
             return "SMU Driver Not Present Or Fault";
         case SMU_Return_RWError:
             return "Read Or Write Error";
+        case SMU_Return_DriverVersion:
+            return "SMU Driver Version Incompatible With Library Version";
         default:
             return "Unspecified Error";
     }

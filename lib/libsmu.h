@@ -23,6 +23,9 @@
 #include <string.h>
 #include <pthread.h>
 
+/* Version the loaded driver must use to be compatible. */
+#define LIBSMU_SUPPORTED_DRIVER_VERSION                    "0.1.0"
+
 /**
  * SMU Mailbox Target
  */
@@ -60,6 +63,8 @@ typedef enum {
     SMU_Return_DriverNotPresent  = 0xF6,
     // Read or write error has occurred. Check errno for last error.
     SMU_Return_RWError           = 0xF5,
+    // Driver version is incompatible.
+    SMU_Return_DriverVersion     = 0xF4,
 } smu_return_val;
 
 /**
@@ -115,6 +120,7 @@ enum SMU_MUTEX_LOCK {
 typedef struct {
     /* Accessible To Users */
     int                         init;
+    int                         driver_version;
 
     smu_processor_codename      codename;
     smu_if_version              smu_if_version;

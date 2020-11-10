@@ -17,7 +17,7 @@
 
 MODULE_AUTHOR("Leonardo Gates <leogatesx9r@protonmail.com>");
 MODULE_DESCRIPTION("AMD Ryzen SMU Command Driver");
-MODULE_VERSION("0.0.1");
+MODULE_VERSION("0.1.0");
 MODULE_LICENSE("GPL");
 
 #define MSEC_TO_NSEC(x)         (x * 1000000)
@@ -29,7 +29,7 @@ MODULE_LICENSE("GPL");
 #define PCI_DEVICE_ID_AMD_17H_M30H_ROOT    0x1480
 #define PCI_DEVICE_ID_AMD_19H_DF_F4	       0x1654
 
-#define MAX_ATTRS_LEN                      11
+#define MAX_ATTRS_LEN                      12
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
     #error "Unsupported kernel version. Minimum: v4.19"
@@ -80,6 +80,10 @@ uint smu_timeout_attempts = 8192;
 
 static ssize_t attr_store_null(struct kobject *kobj, struct kobj_attribute *attr, const char *buff, size_t count) {
     return 0;
+}
+
+static ssize_t drv_version_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
+    return sprintf(buff, "%s\n", THIS_MODULE->version);
 }
 
 static ssize_t version_show(struct kobject *kobj, struct kobj_attribute *attr, char *buff) {
@@ -211,7 +215,7 @@ size_t count) {
     return count;
 }
 
-
+__RO_ATTR (drv_version);
 __RO_ATTR (version);
 __RO_ATTR (mp1_if_version);
 __RO_ATTR (codename);
@@ -227,6 +231,7 @@ __RW_ATTR (smu_args);
 __RW_ATTR (smn);
 
 static struct attribute *drv_attrs[MAX_ATTRS_LEN] = {
+    &dev_attr_drv_version.attr,
     &dev_attr_version.attr,
     &dev_attr_mp1_if_version.attr,
     &dev_attr_codename.attr,

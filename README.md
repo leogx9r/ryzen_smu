@@ -36,6 +36,7 @@ In addition, for the following models, the power metrics/monitoring (PM) table c
 When loaded, the driver exposes several files under sysfs which can only be read with root
 permissions (for obvious reasons):
 
+- `/sys/kernel/ryzen_smu_drv/drv_version`
 - `/sys/kernel/ryzen_smu_drv/version`
 - `/sys/kernel/ryzen_smu_drv/mp1_if_version`
 - `/sys/kernel/ryzen_smu_drv/codename`
@@ -109,6 +110,7 @@ total 0
 drwxr-xr-x  2 root root    0 May  7 03:01 ./
 drwxr-xr-x 14 root root    0 May  7 03:01 ../
 -r--------  1 root root 4.0K May  7 03:12 codename
+-r--------  1 root root 4.0K May  7 03:12 drv_version
 -r--------  1 root root 4.0K May  7 03:10 mp1_if_version
 -rw-------  1 root root 4.0K May  7 03:10 mp1_smu_cmd
 -r--------  1 root root 4.0K May  7 03:12 pm_table
@@ -128,6 +130,9 @@ SMU v46.54.0
 # cat /sys/kernel/ryzen_smu_drv/codename
 4
 
+# cat /sys/kernel/ryzen_smu_drv/drv_version
+0.0.1
+
 ```
 
 Following which, you can run the [test.py script](scripts/test.py) to verify that SMU and SMN
@@ -145,6 +150,11 @@ Everything seems to be working properly!
 ```
 
 ## Explaining Sysfs Files
+
+#### `/sys/kernel/ryzen_smu_drv/drv_version`
+
+Lists the string-representation of the driver (and thus interface) version. For userspace
+applications, they should make sure this version is within the expected range.
 
 #### `/sys/kernel/ryzen_smu_drv/version`
 
