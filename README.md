@@ -338,6 +338,17 @@ the table is shown.
 Accepted ranges are in milliseconds, between `50` and `60000`, defaulting to `1000`. It is generally
 a good idea to leave this at its default value.
 
+#### `smu_pm_use_timer`
+
+Indicates whether PM table reads will be updated according to the timeout from `smu_pm_update_ms` or
+not. If this is disabled, every read from the PM table will trigger an SMU update command,
+regardless of how long ago the last update was.
+
+Generally this should be enabled since most users have no need for an update period faster than the
+minimum 50 millisecond delay.
+
+Accepted values are [0, 1], defaulting to 1.
+
 ## Example Usage
 
 For Matisse & Vermeer processors, there are several commands that are known to work:
