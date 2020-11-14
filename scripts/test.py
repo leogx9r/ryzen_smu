@@ -183,7 +183,7 @@ def test_get_codename():
     ]
     args = read_file_str(CN_PATH, 3)
 
-    if args != False and int(args) != 0 and int(args) < 11:
+    if args != False and int(args) != 0 and int(args) < len(codenames):
         print("Processor Code Name: " + codenames[int(args)])
         return True
     
