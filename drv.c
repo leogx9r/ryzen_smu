@@ -20,14 +20,14 @@ MODULE_DESCRIPTION("AMD Ryzen SMU Command Driver");
 MODULE_VERSION("0.1.0");
 MODULE_LICENSE("GPL");
 
-#define MSEC_TO_NSEC(x)         (x * 1000000)
+#define MSEC_TO_NSEC(x)                    (x * 1000000)
 
 #define PCI_VENDOR_ID_AMD                  0x1022
 #define PCI_DEVICE_ID_AMD_17H_ROOT         0x1450
 #define PCI_DEVICE_ID_AMD_17H_M10H_ROOT    0x15d0
 #define PCI_DEVICE_ID_AMD_17H_M60H_ROOT    0x1630
 #define PCI_DEVICE_ID_AMD_17H_M30H_ROOT    0x1480
-#define PCI_DEVICE_ID_AMD_19H_DF_F4	       0x1654
+#define PCI_DEVICE_ID_AMD_19H_DF_F4        0x1654
 
 #define MAX_ATTRS_LEN                      12
 
