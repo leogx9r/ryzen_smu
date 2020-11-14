@@ -243,6 +243,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
                 g_smu.codename = CODENAME_MILAN;
                 break;
             case 0x20:
+            case 0x21:
                 g_smu.codename = CODENAME_VERMEER;
                 break;
             case 0x40:
