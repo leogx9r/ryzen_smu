@@ -511,6 +511,8 @@ void start_pm_monitor(int force) {
                 total_voltage += core_voltage;
             }
 
+            // AMD denotes a sleeping core as having spent less than 6% of the time in C0.
+            // Source: Ryzen Master
             if (pmt->CORE_C0[i] >= 6.f) {
                 core_print_line(i,
                     "%4.f MHz | %4.3f W | %1.3f V | %4.2f C | C0: %5.1f % | C1: %5.1f % | C6: %5.1f %",
@@ -607,7 +609,7 @@ void parse_args(int argc, char** argv) {
     core = 0;
     force = 0;
 
-    while ((c = getopt(argc, argv, "vmrftpu:")) != -1) {
+    while ((c = getopt(argc, argv, "vmfuh:")) != -1) {
         switch (c) {
             case 'v':
                 print_version();
