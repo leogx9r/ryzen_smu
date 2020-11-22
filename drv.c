@@ -15,6 +15,10 @@
 
 #include "smu.h"
 
+#ifndef KBUILD_MODNAME
+    #define KBUILD_MODNAME "ryzen_smu_drv"
+#endif
+
 MODULE_AUTHOR("Leonardo Gates <leogatesx9r@protonmail.com>");
 MODULE_DESCRIPTION("AMD Ryzen SMU Command Driver");
 MODULE_VERSION("0.1.0");
