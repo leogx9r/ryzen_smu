@@ -172,7 +172,7 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, smu_req_args_t
 }
 
 int smu_resolve_cpu_class(struct pci_dev* dev) {
-    u32 cpuid,cpu_family, cpu_model, stepping, pkg_type;
+    u32 cpuid, cpu_family, cpu_model, stepping, pkg_type;
 
     // https://en.wikichip.org/wiki/amd/cpuid
     // Res. + ExtFamily + ExtModel + Res. + BaseFamily + BaseModel + Stepping
