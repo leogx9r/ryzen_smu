@@ -16,7 +16,7 @@
 #include "smu.h"
 
 #ifndef KBUILD_MODNAME
-    #define KBUILD_MODNAME "ryzen_smu_drv"
+    #define KBUILD_MODNAME "ryzen_smu"
 #endif
 
 MODULE_AUTHOR("Leonardo Gates <leogatesx9r@protonmail.com>");
@@ -404,7 +404,7 @@ static struct pci_driver ryzen_smu_driver = {
     .id_table = ryzen_smu_id_table,
     .remove = ryzen_smu_remove,
     .probe = ryzen_smu_probe,
-    .name = "ryzen_smu",
+    .name = KBUILD_MODNAME,
 };
 
 static int __init ryzen_smu_driver_init(void) {
