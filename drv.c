@@ -428,11 +428,11 @@ static void ryzen_smu_driver_exit(void) {
 module_init(ryzen_smu_driver_init);
 module_exit(ryzen_smu_driver_exit);
 
-module_param(smu_pm_use_timer, uint, 0644);
+module_param(smu_pm_use_timer, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 MODULE_PARM_DESC(smu_pm_use_timer, "Indicates whether PM table reads will be updated using the timeout from smu_pm_update_ms or not. Default: 1 (true)");
 
-module_param(smu_pm_update_ms, uint, 0644);
+module_param(smu_pm_update_ms, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 MODULE_PARM_DESC(smu_pm_update_ms, "Controls how often in milliseconds, the SMU is commanded to update the PM table. Default: 1000ms");
 
-module_param(smu_timeout_attempts, uint, 0644);
+module_param(smu_timeout_attempts, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 MODULE_PARM_DESC(smu_timeout_attempts, "Waits at most, this many milliseconds till an executing SMU command is determined to have timed out. Default: 8192");
