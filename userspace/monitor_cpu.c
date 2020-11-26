@@ -423,8 +423,8 @@ void _print_core_line(const char* label, const char* value_format, ...) {
 }
 
 void start_pm_monitor(int force) {
-    float total_usage, peak_core_frequency, core_voltage, core_frequency,
-        total_voltage, average_voltage, core_sleep_time, edc_value, total_core_CC6;
+    float total_usage, peak_core_frequency, core_voltage, core_frequency, total_core_voltage,
+        average_voltage, package_sleep_time, core_sleep_time, edc_value, total_core_CC6;
 
     const char* name, *codename, *smu_fw_ver;
     unsigned int cores, ccds, ccxs, cores_per_ccx, if_ver, i;
@@ -489,10 +489,11 @@ void start_pm_monitor(int force) {
         print_line("MP1 IF Version", "v%d", if_ver);
         fprintf(stdout, "╰────────────────────────────────────────────────┴─────────────────────────────────────────────────╯\n");
 
-        total_core_CC6 = total_usage = total_voltage = peak_core_frequency = 0;
+        total_core_CC6 = total_usage = total_core_voltage = peak_core_frequency = 0;
 
-        average_voltage = (pmt->CPU_TELEMETRY_VOLTAGE * (1.0 - (pmt->PC6 * 0.01))) +
-            (0.002 * pmt->PC6);
+        package_sleep_time = pmt->PC6 / 100.f;
+        average_voltage = (pmt->CPU_TELEMETRY_VOLTAGE - (0.2 * package_sleep_time)) /
+            (1.0 - package_sleep_time);
 
         fprintf(stdout, "╭─────────┬────────────────┬─────────┬─────────┬─────────┬─────────────┬─────────────┬─────────────╮\n");
         for (i = 0; i < cores; i++) {
@@ -508,7 +509,7 @@ void start_pm_monitor(int force) {
             if (pmt->CORE_FREQ[i] != 0.f) {
                 core_sleep_time = pmt->CORE_CC6[i] / 100.f;
                 core_voltage = ((1.0 - core_sleep_time) * average_voltage) + (0.2 * core_sleep_time);
-                total_voltage += core_voltage;
+                total_core_voltage += core_voltage;
             }
 
             // AMD denotes a sleeping core as having spent less than 6% of the time in C0.
@@ -528,7 +529,7 @@ void start_pm_monitor(int force) {
         fprintf(stdout, "╰─────────┴────────────────┴─────────┴─────────┴─────────┴─────────────┴─────────────┴─────────────╯\n");
 
         fprintf(stdout, "╭────────────────────────────────────────────────┬─────────────────────────────────────────────────╮\n");
-        average_voltage = total_voltage / cores;
+        average_voltage = total_core_voltage / cores;
         edc_value = pmt->EDC_VALUE * (total_usage / cores / 100);
 
         if (edc_value < pmt->TDC_VALUE)
