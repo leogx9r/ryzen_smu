@@ -1,7 +1,6 @@
 # Ryzen SMU
 
-![Ryzen SMU Capabilities](pics/preview1.jpg)
-![Ryzen SMU Capabilities](pics/preview2.jpg)
+<img src="pics/preview1.jpg" width="400" height="650"> <img src="pics/preview2.jpg" width="400" height="650">
 
 **Ryzen SMU** is a Linux kernel driver that exposes access to the SMU (System Management Unit) for
 certain AMD Ryzen Processors.
