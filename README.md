@@ -1,8 +1,9 @@
 # Ryzen SMU
 
-![Ryzen SMU Capabilities](pics/preview.jpg)
+![Ryzen SMU Capabilities](pics/preview1.jpg)
+![Ryzen SMU Capabilities](pics/preview2.jpg)
 
-*Ryzen SMU* is a Linux kernel driver that exposes access to the SMU (System Management Unit) for
+**Ryzen SMU** is a Linux kernel driver that exposes access to the SMU (System Management Unit) for
 certain AMD Ryzen Processors.
 
 The following processor code names are supported:
@@ -24,7 +25,8 @@ The following processor code names are supported:
 - Milan
 - Dali
 
-In addition, for the following models, the power metrics/monitoring (PM) table can also be accessed:
+In addition, for the following models, the power metrics/monitoring (PM) table (seen in screenshot)
+can also be accessed:
 
 - [Vermeer](https://en.wikichip.org/wiki/amd/cores/vermeer) ( Ryzen 5000 Desktop Series )
 - [Matisse](https://en.wikichip.org/wiki/amd/cores/matisse) ( Ryzen 3000 Desktop Series )
@@ -57,9 +59,11 @@ exposed:
 
 The kernel module may be installed either by DKMS or manually building and inserting the module.
 
+Be sure kernel headers, dev utilities such as `gcc` and `make` are installed beforehand.
+
 ### Ubuntu / Debian
 
-```
+```sh
 sudo apt install dkms git build-essential linux-headers-$(uname -r)
 git clone https://gitlab.com/leogx9r/ryzen_smu.git
 cd ryzen_smu
@@ -81,7 +85,7 @@ yay -S ryzen_smu-dkms-git
 
 The module may be built and inserted into the running kernel manually as follows:
 
-```
+```sh
 git clone https://gitlab.com/leogx9r/ryzen_smu.git
 cd ryzen_smu
 
@@ -93,7 +97,7 @@ sudo insmod ryzen_smu.ko
 
 Upon loading the module, you should see output in your `dmesg` window listing the SMU version:
 
-```
+```sh
 # dmesg
 
 ...
