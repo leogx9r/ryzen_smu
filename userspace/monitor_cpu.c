@@ -540,8 +540,8 @@ void start_pm_monitor(int force) {
         print_line("Peak Core Frequency", "%8.0f MHz", peak_core_frequency);
         print_line("Peak Temperature", "%8.2f C", pmt->PEAK_TEMP);
         print_line("Package Power", "%8.4f W", pmt->SOCKET_POWER);
-        print_line("Peak Core Voltage", "%2.6f V", pmt->CPU_TELEMETRY_VOLTAGE);
-        print_line("Average Voltage", "%2.6f V", average_voltage);
+        print_line("Peak Core(s) Voltage", "%2.6f V", pmt->CPU_TELEMETRY_VOLTAGE);
+        print_line("Average Core Voltage", "%2.6f V", average_voltage);
         print_line("Package CC6", "%3.6f %%", pmt->PC6);
         print_line("Core CC6", "%3.6f %%", total_core_CC6);
         fprintf(stdout, "╰────────────────────────────────────────────────┴─────────────────────────────────────────────────╯\n");
