@@ -437,7 +437,7 @@ void start_pm_monitor(int force) {
     }
 
     if (!force && obj.pm_table_version != PM_TABLE_SUPPORTED_VERSION) {
-        fprintf(stderr, "PM Table version is not currently suppported. Run with \"-pf\" flag to ignore this.\n");
+        fprintf(stderr, "PM Table version is not currently suppported. Run with \"-f\" flag to ignore this.\n");
         exit(0);
     }
 
