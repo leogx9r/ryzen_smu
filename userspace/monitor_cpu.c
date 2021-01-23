@@ -516,13 +516,13 @@ void start_pm_monitor(int force) {
             // Source: Ryzen Master
             if (pmt->CORE_C0[i] >= 6.f) {
                 core_print_line(i,
-                    "%4.f MHz | %4.3f W | %1.3f V | %4.2f C | C0: %5.1f % | C1: %5.1f % | C6: %5.1f %",
+                    "%4.f MHz | %4.3f W | %1.3f V | %5.2f C | C0: %5.1f % | C1: %5.1f % | C6: %5.1f %",
                     core_frequency, pmt->CORE_POWER[i], core_voltage, pmt->CORE_TEMP[i],
                     pmt->CORE_C0[i], pmt->CORE_CC1[i], pmt->CORE_CC6[i]);
             }
             else
                 core_print_line(i,
-                    "Sleeping | %4.3f W | %1.3f V | %4.2f C | C0: %5.1f % | C1: %5.1f % | C6: %5.1f %",
+                    "Sleeping | %4.3f W | %1.3f V | %5.2f C | C0: %5.1f % | C1: %5.1f % | C6: %5.1f %",
                     pmt->CORE_POWER[i], core_voltage, pmt->CORE_TEMP[i], pmt->CORE_C0[i],
                     pmt->CORE_CC1[i], pmt->CORE_CC6[i]);
         }
