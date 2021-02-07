@@ -23,10 +23,6 @@
 /* Maximum size in bytes, of the PM table for any processor codename. */
 #define PM_TABLE_MAX_SIZE                             0x8C8
 
-/* Specifies the range on how often, in milliseconds, to command the SMU to update the PM table. */
-#define PM_TABLE_MAX_UPDATE_TIME_MS                   60000
-#define PM_TABLE_MIN_UPDATE_TIME_MS                   50
-
 /* Specifies the amount of attempts an of polling the SMU for a command response till it fails. */
 #define SMU_RETRIES_MAX                               32768
 #define SMU_RETRIES_MIN                               500
@@ -126,8 +122,6 @@ typedef union {
 } smu_req_args_t;
 
 /* Parameters for SMU execution. */
-extern uint smu_pm_use_timer;
-extern uint smu_pm_update_ns;
 extern uint smu_timeout_attempts;
 
 /**

@@ -26,7 +26,7 @@ static struct {
     u32                            pm_dram_base_alt;
     u32                            pm_dram_map_size;
     u32                            pm_dram_map_size_alt;
-    u64                            pm_last_probe_ns;
+    u32                            pm_jiffies;
 
     u8 __iomem*                    pm_table_virt_addr;
     u8 __iomem*                    pm_table_virt_addr_alt;
@@ -46,7 +46,7 @@ static struct {
     .pm_dram_base_alt            = 0,
     .pm_dram_map_size            = 0,
     .pm_dram_map_size_alt        = 0,
-    .pm_last_probe_ns            = 0,
+    .pm_jiffies                  = 0,
 
     .pm_table_virt_addr          = NULL,
     .pm_table_virt_addr_alt      = NULL,
@@ -577,7 +577,6 @@ enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) 
 
 enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, size_t* len) {
     u32 ret, version, size;
-    u64 tm;
 
     // The DRAM base does not change across boots meaning it only needs to be
     //  fetched once.
@@ -691,18 +690,11 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
     // Clamp output size
     *len = g_smu.pm_dram_map_size;
 
-    // Check if we should tell the SMU to refresh the table with nanosecond precision
-    if (smu_pm_use_timer) {
-        tm = ktime_get_ns();
-        if ((tm - g_smu.pm_last_probe_ns) > smu_pm_update_ns) {
-            ret = smu_transfer_table_to_dram(dev);
-            if (ret != SMU_Return_OK)
-                return ret;
+    // Check if we should tell the SMU to refresh the table via jiffies.
+    // Use a minimum interval of 1 ms.
+    if (!g_smu.pm_jiffies || time_after(jiffies, g_smu.pm_jiffies + msecs_to_jiffies(1))) {
+        g_smu.pm_jiffies = jiffies;
 
-            g_smu.pm_last_probe_ns = tm;
-        }
-    }
-    else {
         ret = smu_transfer_table_to_dram(dev);
         if (ret != SMU_Return_OK)
             return ret;

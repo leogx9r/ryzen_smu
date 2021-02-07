@@ -322,7 +322,7 @@ whose structure is determined by the version of the table.
 
 ## Module Parameters
 
-The driver supports the following module parameters:
+The driver supports the following module parameter(s):
 
 #### `smu_timeout_attempts`
 
@@ -331,26 +331,6 @@ When executing an SMU command, either by reading `pm_table` or manually, via `sm
 
 For example, on slower or busy systems, the SMU may be tied up resulting in commands taking longer
 to execute than normal. Allowed range is from `500` to `32768`, defaulting to `8192`.
-
-#### `smu_pm_update_ms`
-
-When the `pm_table` file is read, the driver first checks for how long since the PM table was last
-updated, and if it exceeds `smu_pm_update_ms`, the SMU is first told to update the contents before
-the table is shown.
-
-Accepted ranges are in milliseconds, between `50` and `60000`, defaulting to `1000`. It is generally
-a good idea to leave this at its default value.
-
-#### `smu_pm_use_timer`
-
-Indicates whether PM table reads will be updated according to the timeout from `smu_pm_update_ms` or
-not. If this is disabled, every read from the PM table will trigger an SMU update command,
-regardless of how long ago the last update was.
-
-Generally this should be enabled since most users have no need for an update period faster than the
-minimum 50 millisecond delay.
-
-Accepted values are [0, 1], defaulting to 1.
 
 ## Example Usage
 
