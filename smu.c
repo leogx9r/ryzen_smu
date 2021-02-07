@@ -55,23 +55,40 @@ static struct {
 static DEFINE_MUTEX(amd_pci_mutex);
 static DEFINE_MUTEX(amd_smu_mutex);
 
-u32 smu_read_address(struct pci_dev* dev, u32 address) {
-    u32 ret;
+int smu_smn_rw_address(struct pci_dev* dev, u32 address, u32* value, int write) {
+    int err;
 
     // This may work differently for multi-NUMA systems.
     mutex_lock(&amd_pci_mutex);
-    pci_write_config_dword(dev, SMU_PCI_ADDR_REG, address);
-    pci_read_config_dword(dev, SMU_PCI_DATA_REG, &ret);
+    err = pci_write_config_dword(dev, SMU_PCI_ADDR_REG, address);
+
+    if (!err) {
+        err = (
+            write ?
+                pci_write_config_dword(dev, SMU_PCI_DATA_REG, *value) :
+                pci_read_config_dword(dev, SMU_PCI_DATA_REG, value)
+        );
+
+        if (err)
+            pr_warn("Error %s SMN address: 0x%x!\n", write ? "writing" : "reading", address);
+    }
+    else
+        pr_warn("Error programming SMN address: 0x%x!\n", address);
     mutex_unlock(&amd_pci_mutex);
 
-    return ret;
+    return err;
+}
+
+u32 smu_read_address(struct pci_dev* dev, u32 address) {
+    u32 value;
+    int ret;
+
+    ret = smu_smn_rw_address(dev, address, &value, 0);
+    return (!ret) ? value : 0;
 }
 
 void smu_write_address(struct pci_dev* dev, u32 address, u32 value) {
-    mutex_lock(&amd_pci_mutex);
-    pci_write_config_dword(dev, SMU_PCI_ADDR_REG, address);
-    pci_write_config_dword(dev, SMU_PCI_DATA_REG, value);
-    mutex_unlock(&amd_pci_mutex);
+    smu_smn_rw_address(dev, address, &value, 1);
 }
 
 void smu_args_init(smu_req_args_t* args, u32 value) {
