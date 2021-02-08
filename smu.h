@@ -56,6 +56,8 @@ enum smu_return_val {
     SMU_Return_InsufficientSize  = 0xF8,
     // Failed to map physical address.
     SMU_Return_MappedError       = 0xF7,
+    // PCIe programming error.
+    SMU_Return_PCIFailed         = 0xF6,
 };
 
 /**
@@ -143,9 +145,11 @@ enum smu_processor_codename smu_get_codename(void);
 
 /**
  * Reads or writes 32 bit words to the SMU on the root NB PCI device.
+ *
+ * Returns an smu_return_val indicating the status of the operation.
  */
-u32 smu_read_address(struct pci_dev* dev, u32 address);
-void smu_write_address(struct pci_dev* dev, u32 address, u32 value);
+enum smu_return_val smu_read_address(struct pci_dev* dev, u32 address, u32* value);
+enum smu_return_val smu_write_address(struct pci_dev* dev, u32 address, u32 value);
 
 /**
  * Initializes an SMU REQ ARG structure with zeros.

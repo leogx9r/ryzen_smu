@@ -75,7 +75,6 @@ smu_return_val smu_init_parse(smu_obj_t* obj) {
         return SMU_Return_RWError;
 
     // The driver version must match the expected exactly.
-    printf("rd_buf: %s", rd_buf);
     if (strcmp(rd_buf, LIBSMU_SUPPORTED_DRIVER_VERSION "\n"))
         return SMU_Return_DriverVersion;
 
@@ -382,6 +381,8 @@ const char* smu_return_to_str(smu_return_val val) {
             return "Insufficient Buffer Size Provided";
         case SMU_Return_MappedError:
             return "Memory Mapping I/O Error";
+        case SMU_Return_PCIFailed:
+            return "PCIe Programming Error";
         case SMU_Return_DriverNotPresent:
             return "SMU Driver Not Present Or Fault";
         case SMU_Return_RWError:

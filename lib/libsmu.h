@@ -24,7 +24,7 @@
 #include <pthread.h>
 
 /* Version the loaded driver must use to be compatible. */
-#define LIBSMU_SUPPORTED_DRIVER_VERSION                    "0.1.0"
+#define LIBSMU_SUPPORTED_DRIVER_VERSION                    "0.1.1"
 
 /**
  * SMU Mailbox Target
@@ -56,15 +56,17 @@ typedef enum {
     SMU_Return_InsufficientSize  = 0xF8,
     // Failed to map physical address.
     SMU_Return_MappedError       = 0xF7,
+    // PCIe programming error.
+    SMU_Return_PCIFailed         = 0xF6,
 
     // Userspace Library Codes
 
     // Driver is not currently loaded or inaccessible.
-    SMU_Return_DriverNotPresent  = 0xF6,
+    SMU_Return_DriverNotPresent  = 0xF0,
     // Read or write error has occurred. Check errno for last error.
-    SMU_Return_RWError           = 0xF5,
+    SMU_Return_RWError           = 0xE9,
     // Driver version is incompatible.
-    SMU_Return_DriverVersion     = 0xF4,
+    SMU_Return_DriverVersion     = 0xE8,
 } smu_return_val;
 
 /**

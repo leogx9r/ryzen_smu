@@ -79,16 +79,12 @@ int smu_smn_rw_address(struct pci_dev* dev, u32 address, u32* value, int write) 
     return err;
 }
 
-u32 smu_read_address(struct pci_dev* dev, u32 address) {
-    u32 value;
-    int ret;
-
-    ret = smu_smn_rw_address(dev, address, &value, 0);
-    return (!ret) ? value : 0;
+enum smu_return_val smu_read_address(struct pci_dev* dev, u32 address, u32* value) {
+    return !smu_smn_rw_address(dev, address, value, 0) ? SMU_Return_OK : SMU_Return_PCIFailed;
 }
 
-void smu_write_address(struct pci_dev* dev, u32 address, u32 value) {
-    smu_smn_rw_address(dev, address, &value, 1);
+enum smu_return_val smu_write_address(struct pci_dev* dev, u32 address, u32 value) {
+    return !smu_smn_rw_address(dev, address, &value, 1) ? SMU_Return_OK : SMU_Return_PCIFailed;
 }
 
 void smu_args_init(smu_req_args_t* args, u32 value) {
@@ -132,7 +128,12 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, smu_req_args_t
     // Step 1: Wait until the RSP register is non-zero.
     retries = smu_timeout_attempts;
     do
-        tmp = smu_read_address(dev, rsp_addr);
+        if (smu_read_address(dev, rsp_addr, &tmp) != SMU_Return_OK) {
+            mutex_unlock(&amd_smu_mutex);
+            pr_warn("Failed to perform initial probe on SMU RSP!\n");
+
+            return SMU_Return_PCIFailed;
+        }
     while (tmp == 0 && retries--);
 
     // Step 1.b: A command is still being processed meaning
@@ -156,7 +157,12 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, smu_req_args_t
 
     // Step 5: Wait until the Response register is non-zero.
     do
-        tmp = smu_read_address(dev, rsp_addr);
+        if (smu_read_address(dev, rsp_addr, &tmp) != SMU_Return_OK) {
+            mutex_unlock(&amd_smu_mutex);
+            pr_warn("Failed to perform probe on SMU RSP!\n");
+
+            return SMU_Return_PCIFailed;
+        }
     while(tmp == 0 && retries--);
 
     // Step 6: If the Response register contains OK, then SMU has finished processing
@@ -178,7 +184,8 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, smu_req_args_t
     // Step 7: If a return argument is expected, the Argument register may be read
     //  at this time.
     for (i = 0; i < SMU_REQ_MAX_ARGS; i++)
-        args->args[i] = smu_read_address(dev, args_addr + (i * 4));
+        if (smu_read_address(dev, args_addr + (i * 4), &args->args[i]) != SMU_Return_OK)
+            pr_warn("Failed to fetch SMU ARG [%d]!\n", i);;
 
     mutex_unlock(&amd_smu_mutex);
 

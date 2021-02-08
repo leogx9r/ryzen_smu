@@ -21,7 +21,7 @@
 
 MODULE_AUTHOR("Leonardo Gates <leogatesx9r@protonmail.com>");
 MODULE_DESCRIPTION("AMD Ryzen SMU Command Driver");
-MODULE_VERSION("0.1.0");
+MODULE_VERSION("0.1.1");
 MODULE_LICENSE("GPL");
 
 #define MSEC_TO_NSEC(x)                    (x * 1000000)
@@ -197,15 +197,27 @@ static ssize_t smn_show(struct kobject *kobj, struct kobj_attribute *attr, char 
 
 static ssize_t smn_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buff,
 size_t count) {
+    u32 address, value;
+
     switch (count) {
         case sizeof(u32):
             // One word written means we read this address at buff[0]
-            g_driver.smn_result = smu_read_address(g_driver.device, *(u32*)buff);
+            address = *(u32*)buff;
+
+            if (smu_read_address(g_driver.device, address, &g_driver.smn_result) != SMU_Return_OK)
+                pr_debug("Failed to read SMN address 0x%x\n", address);
             break;
         case (sizeof(u32) * 2):
             // Two words written means we write the second word to the address of the first word
-            smu_write_address(g_driver.device, *(u32*)buff, *(u32*)(buff + sizeof(u32)));
-            g_driver.smn_result = 0;
+            address = *(u32*)buff;
+            value = *(u32*)(buff + sizeof(u32));
+
+            if (smu_write_address(g_driver.device, address, value) != SMU_Return_OK) {
+                pr_debug("Failed to write SMN address 0x%x with value 0x%x\n", address, value);
+                g_driver.smn_result = SMU_Return_PCIFailed;
+            }
+            else
+                g_driver.smn_result = SMU_Return_OK;
             break;
         default:
             return 0;

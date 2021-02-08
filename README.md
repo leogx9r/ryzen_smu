@@ -236,7 +236,9 @@ This file allows the user to initiate an RSMU or MP1 SMU request. It accepts eit
 32-bit command ID that is platform-dependent.
 
 When this file is read, it produces the result on the status of the operation, as a 32 bit
-little-endian encoded value:
+little-endian encoded value.
+
+The SMU returns the following possible values which indicate the result of a command execution:
 
 | Hex | Decimal | Explanation                   |
 |:---:|:-------:|:-----------------------------:|
@@ -246,9 +248,18 @@ little-endian encoded value:
 | FEh | 254     | UNKNOWN COMMAND               |
 | FDh | 253     | REJECTED - PREREQUISITE UNMET |
 | FCh | 252     | REJECTED - BUSY               |
+
+In addition to this, several custom error codes are also implemented by the driver:
+
+| Hex | Decimal | Explanation                   |
+|:---:|:-------:|:-----------------------------:|
 | FBh | 251     | COMMAND TIMEOUT               |
 | FAh | 250     | INVALID ARGUMENT              |
 | F9h | 249     | UNSUPPORTED PLATFORM          |
+| F8h | 248     | INSUFFICIENT BUFFER SIZE      |
+| F7h | 247     | MEMORY MAP ERROR              |
+| F6h | 246     | PCI PROGRAMMING ERROR         |
+
 
 #### `/sys/kernel/ryzen_smu_drv/smu_args`
 
