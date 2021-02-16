@@ -434,6 +434,8 @@ u64 smu_get_dram_base_address(struct pci_dev* dev) {
 
     const enum smu_mailbox type = MAILBOX_TYPE_RSMU;
 
+    smu_args_init(&args, 0);
+
     switch (g_smu.codename) {
         case CODENAME_VERMEER:
         case CODENAME_MATISSE:
@@ -459,8 +461,6 @@ u64 smu_get_dram_base_address(struct pci_dev* dev) {
         default:
             return SMU_Return_Unsupported;
     }
-
-    smu_args_init(&args, 0);
 
 BASE_ADDR_CLASS_1:
     args.s.arg0 = args.s.arg1 = 1;
