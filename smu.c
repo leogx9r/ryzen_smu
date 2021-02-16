@@ -305,8 +305,7 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_rsmu_mb_cmd  = 0x3B10524;
             g_smu.addr_rsmu_mb_rsp  = 0x3B10570;
             g_smu.addr_rsmu_mb_args = 0x3B10A40;
-            pr_debug("RSMU Mailbox: v1 selected for use");
-            break;
+            goto LOG_RSMU;
         case CODENAME_COLFAX:
         case CODENAME_SUMMITRIDGE:
         case CODENAME_THREADRIPPER:
@@ -314,8 +313,7 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_rsmu_mb_cmd  = 0x3B1051C;
             g_smu.addr_rsmu_mb_rsp  = 0x3B10568;
             g_smu.addr_rsmu_mb_args = 0x3B10590;
-            pr_debug("RSMU Mailbox: v2 selected for use");
-            break;
+            goto LOG_RSMU;
         case CODENAME_RENOIR:
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE:
@@ -324,18 +322,24 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_rsmu_mb_cmd  = 0x3B10A20;
             g_smu.addr_rsmu_mb_rsp  = 0x3B10A80;
             g_smu.addr_rsmu_mb_args = 0x3B10A88;
-            pr_debug("RSMU Mailbox: v3 selected for use");
-            break;
+            goto LOG_RSMU;
             // Note: This **MAY** use the same mailbox as Matisse but untested at this time.
         case CODENAME_VANGOGH:
         case CODENAME_REMBRANT:
         case CODENAME_CEZANNE:
         case CODENAME_MILAN:
-            pr_debug("RSMU Mailbox: Undefined during init. Disabling.");
-            break;
+            pr_debug("RSMU Mailbox: Not supported or unknown, disabling use.");
+            goto MP1_DETECT;
         default:
+            pr_err("Unknown processor codename: %d", g_smu.codename);
             return -ENODEV;
     }
+
+LOG_RSMU:
+    pr_debug("RSMU Mailbox: (cmd: 0x%X, rsp: 0x%X, args: 0x%X)",
+        g_smu.addr_rsmu_mb_cmd, g_smu.addr_rsmu_mb_rsp, g_smu.addr_rsmu_mb_args);
+
+MP1_DETECT:
 
     // Detect MP1 SMU
     switch (g_smu.codename) {
@@ -347,7 +351,6 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10564;
             g_smu.addr_mp1_mb_args  = 0x3B10598;
-            pr_debug("MP1 Mailbox: v9 selected for use");
             break;
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE:
@@ -357,7 +360,6 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10564;
             g_smu.addr_mp1_mb_args  = 0x3B10998;
-            pr_debug("MP1 Mailbox: v10 selected for use");
             break;
         case CODENAME_MATISSE:
         case CODENAME_VERMEER:
@@ -366,14 +368,12 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_mp1_mb_cmd   = 0x3B10530;
             g_smu.addr_mp1_mb_rsp   = 0x3B1057C;
             g_smu.addr_mp1_mb_args  = 0x3B109C4;
-            pr_debug("MP1 Mailbox: v11 selected for use");
             break;
         case CODENAME_RENOIR:
             g_smu.mp1_if_ver        = IF_VERSION_12;
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10564;
             g_smu.addr_mp1_mb_args  = 0x3B10998;
-            pr_debug("MP1 Mailbox: v12 selected for use");
             break;
         case CODENAME_VANGOGH:
         case CODENAME_REMBRANT:
@@ -383,11 +383,14 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3b10578;
             g_smu.addr_mp1_mb_args  = 0x3B10998;
-            pr_debug("MP1 Mailbox: v13 selected for use");
             break;
         default:
+            pr_err("Unknown processor codename: %d", g_smu.codename);
             return -ENODEV;
     }
+
+    pr_debug("MP1 Mailbox: (cmd: 0x%X, rsp: 0x%X, args: 0x%X)",
+        g_smu.addr_mp1_mb_cmd, g_smu.addr_mp1_mb_rsp, g_smu.addr_mp1_mb_args);
 
     return 0;
 }
@@ -582,6 +585,84 @@ enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) 
     return ret;
 }
 
+u32 smu_update_pmtable_size(u32 version) {
+    switch (g_smu.codename) {
+        case CODENAME_MATISSE:
+            switch (version) {
+                case 0x240902:
+                    g_smu.pm_dram_map_size = 0x514;
+                    break;
+                case 0x240903:
+                    g_smu.pm_dram_map_size = 0x518;
+                    break;
+                case 0x240802:
+                    g_smu.pm_dram_map_size = 0x7E0;
+                    break;
+                case 0x240803:
+                    g_smu.pm_dram_map_size = 0x7E4;
+                    break;
+                default:
+                UNKNOWN_PM_TABLE_VERSION:
+                    return SMU_Return_Unsupported;
+            }
+            break;
+        case CODENAME_VERMEER:
+            switch (version) {
+                case 0x2D0903:
+                    g_smu.pm_dram_map_size = 0x594;
+                    break;
+                case 0x380904:
+                    g_smu.pm_dram_map_size = 0x5A4;
+                    break;
+                case 0x2D0803:
+                    g_smu.pm_dram_map_size = 0x894;
+                    break;
+                case 0x380804:
+                    g_smu.pm_dram_map_size = 0x8A4;
+                    break;
+                default:
+                    goto UNKNOWN_PM_TABLE_VERSION;
+            }
+            break;
+        case CODENAME_RENOIR:
+            switch (version) {
+                case 0x370000:
+                    g_smu.pm_dram_map_size = 0x794;
+                    break;
+                case 0x370001:
+                    g_smu.pm_dram_map_size = 0x884;
+                    break;
+                case 0x370002:
+                case 0x370003:
+                    g_smu.pm_dram_map_size = 0x88C;
+                    break;
+                case 0x370004:
+                    g_smu.pm_dram_map_size = 0x8AC;
+                    break;
+                case 0x370005:
+                    g_smu.pm_dram_map_size = 0x8C8;
+                    break;
+                default:
+                    goto UNKNOWN_PM_TABLE_VERSION;
+            }
+            break;
+        case CODENAME_PICASSO:
+        case CODENAME_RAVENRIDGE:
+        case CODENAME_RAVENRIDGE2:
+            g_smu.pm_dram_map_size_alt = 0xA4;
+            g_smu.pm_dram_map_size = 0x608 + g_smu.pm_dram_map_size_alt;
+
+            // Split DRAM base into high/low values.
+            g_smu.pm_dram_base_alt = g_smu.pm_dram_base >> 32;
+            g_smu.pm_dram_base &= 0xFFFFFFFF;
+            break;
+        default:
+            return SMU_Return_Unsupported;
+    }
+
+    return SMU_Return_OK;
+}
+
 enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, size_t* len) {
     u32 ret, version, size;
 
@@ -591,7 +672,7 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
         g_smu.pm_dram_base = smu_get_dram_base_address(dev);
 
         if (g_smu.pm_dram_base < 0xFF && g_smu.pm_dram_base >= 0) {
-            pr_err("Unable to receive the DRAM base address (%X)", (u8)g_smu.pm_dram_base);
+            pr_err("Unable to receive the DRAM base address: %X", (u8)g_smu.pm_dram_base);
             return g_smu.pm_dram_base;
         }
 
@@ -602,93 +683,26 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
             ret = smu_get_pm_table_version(dev, &version);
 
             if (ret != SMU_Return_OK) {
-                pr_err("Failed to get PM Table version, returned %X\n", ret);
+                pr_err("Failed to get PM Table version with error: %X\n", ret);
                 return ret;
             }
         }
 
-        switch (g_smu.codename) {
-            case CODENAME_MATISSE:
-                switch (version) {
-                    case 0x240902:
-                        g_smu.pm_dram_map_size = 0x514;
-                        break;
-                    case 0x240903:
-                        g_smu.pm_dram_map_size = 0x518;
-                        break;
-                    case 0x240802:
-                        g_smu.pm_dram_map_size = 0x7E0;
-                        break;
-                    case 0x240803:
-                        g_smu.pm_dram_map_size = 0x7E4;
-                        break;
-                    default:
-                    UNKNOWN_PM_TABLE_VERSION:
-                        pr_err("Unknown PM table version: 0x%08X", version);
-                        return SMU_Return_Unsupported;
-                }
-                break;
-            case CODENAME_VERMEER:
-                switch (version) {
-                    case 0x2D0903:
-                        g_smu.pm_dram_map_size = 0x594;
-                        break;
-                    case 0x380904:
-                        g_smu.pm_dram_map_size = 0x5A4;
-                        break;
-                    case 0x2D0803:
-                        g_smu.pm_dram_map_size = 0x894;
-                        break;
-                    case 0x380804:
-                        g_smu.pm_dram_map_size = 0x8A4;
-                        break;
-                    default:
-                        goto UNKNOWN_PM_TABLE_VERSION;
-                }
-                break;
-            case CODENAME_RENOIR:
-                switch (version) {
-                    case 0x370000:
-                        g_smu.pm_dram_map_size = 0x794;
-                        break;
-                    case 0x370001:
-                        g_smu.pm_dram_map_size = 0x884;
-                        break;
-                    case 0x370002:
-                    case 0x370003:
-                        g_smu.pm_dram_map_size = 0x88C;
-                        break;
-                    case 0x370004:
-                        g_smu.pm_dram_map_size = 0x8AC;
-                        break;
-                    case 0x370005:
-                        g_smu.pm_dram_map_size = 0x8C8;
-                        break;
-                    default:
-                        goto UNKNOWN_PM_TABLE_VERSION;
-                }
-                break;
-            case CODENAME_PICASSO:
-            case CODENAME_RAVENRIDGE:
-            case CODENAME_RAVENRIDGE2:
-                g_smu.pm_dram_map_size_alt = 0xA4;
-                g_smu.pm_dram_map_size = 0x608 + g_smu.pm_dram_map_size_alt;
-
-                // Split DRAM base into high/low values.
-                g_smu.pm_dram_base_alt = g_smu.pm_dram_base >> 32;
-                g_smu.pm_dram_base &= 0xFFFFFFFF;
-                break;
-            default:
-                return SMU_Return_Unsupported;
+        ret = smu_update_pmtable_size(version);
+        if (ret != SMU_Return_OK) {
+            pr_err("Unknown PM table version: 0x%08X", version);
+            return ret;
         }
 
-        pr_debug("Determined PM mapping size as (%xh,%xh) bytes", g_smu.pm_dram_map_size, g_smu.pm_dram_map_size_alt);
+        pr_debug("Determined PM mapping size as (%xh,%xh) bytes.",
+            g_smu.pm_dram_map_size, g_smu.pm_dram_map_size_alt);
     }
 
     // Validate output buffer size
     // N.B. In the case of Picasso/RavenRidge 2, we include the secondary PM Table size as well
     if (*len < g_smu.pm_dram_map_size) {
-        pr_warn("Insufficient buffer size for PM table read: %lu < %d", *len, g_smu.pm_dram_map_size);
+        pr_warn("Insufficient buffer size for PM table read: %lu < %d",
+            *len, g_smu.pm_dram_map_size);
 
         *len = g_smu.pm_dram_map_size;
         return SMU_Return_InsufficientSize;
