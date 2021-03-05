@@ -370,6 +370,7 @@ MP1_DETECT:
             g_smu.addr_mp1_mb_args  = 0x3B109C4;
             break;
         case CODENAME_RENOIR:
+        case CODENAME_CEZANNE:
             g_smu.mp1_if_ver        = IF_VERSION_12;
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10564;
@@ -377,11 +378,10 @@ MP1_DETECT:
             break;
         case CODENAME_VANGOGH:
         case CODENAME_REMBRANT:
-        case CODENAME_CEZANNE:
         case CODENAME_MILAN:
             g_smu.mp1_if_ver       = IF_VERSION_13;
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
-            g_smu.addr_mp1_mb_rsp   = 0x3b10578;
+            g_smu.addr_mp1_mb_rsp   = 0x3B10578;
             g_smu.addr_mp1_mb_args  = 0x3B10998;
             break;
         default:
