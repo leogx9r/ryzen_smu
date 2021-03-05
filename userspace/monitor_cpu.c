@@ -339,58 +339,70 @@ unsigned int count_set_bits(unsigned int v) {
     return result;
 }
 
+void get_fuse_topology(int fam, int model, unsigned int* ccds_enabled, unsigned int* ccds_disabled,
+    unsigned int* cores_disabled, unsigned int* smt_enabled) {
+    unsigned int ccds_down, ccds_present, core_fuse, core_fuse_addr, ccd_fuse1, ccd_fuse2;
+
+    ccd_fuse1 = 0x5D218;
+    ccd_fuse2 = 0x5D21C;
+
+    if (fam == 0x17 && model != 0x71) {
+        ccd_fuse1 += 0x40;
+        ccd_fuse2 += 0x40;
+    }
+
+    if (smu_read_smn_addr(&obj, ccd_fuse1, &ccds_present) != SMU_Return_OK ||
+        smu_read_smn_addr(&obj, ccd_fuse2, &ccds_down) != SMU_Return_OK) {
+        perror("Failed to read CCD fuses");
+        exit(-1);
+    }
+
+    *ccds_disabled = ((ccds_down & 0x3F) << 2) | ((ccds_present >> 30) & 0x3);
+
+    ccds_present = (ccds_present >> 22) & 0xFF;
+    *ccds_enabled = ccds_present;
+
+    if (fam == 0x19)
+        core_fuse_addr = (0x30081800 + 0x598) |
+            ((((*ccds_disabled & ccds_present) & 1) == 1) ? 0x2000000 : 0);
+    else
+        core_fuse_addr = (0x30081800 + 0x238) | (((ccds_present & 1) == 0) ? 0x2000000 : 0);
+
+    if (smu_read_smn_addr(&obj, core_fuse_addr, &core_fuse) != SMU_Return_OK) {
+        perror("Failed to read core fuse");
+        exit(-1);
+    }
+
+    *cores_disabled = core_fuse & 0xFF;
+    *smt_enabled = (core_fuse & (1 << 8)) != 0;
+}
+
 unsigned int get_processor_topology(unsigned int* ccds, unsigned int *ccxs,
     unsigned int *cores_per_ccx, unsigned int* cores) {
-    unsigned int ccds_present, ccds_down, ccd_enable_map, ccd_disable_map,
-        core_disable_map, core_disable_map_addr, logical_cores, threads_per_core,
-        fam, model, fuse1, fuse2, offs, eax, ebx, ecx, edx;
+    unsigned int  ccds_enabled, ccds_disabled, core_disable_map, logical_cores,
+        smt, fam, model, eax, ebx, ecx, edx;
 
     __get_cpuid(0x00000001, &eax, &ebx, &ecx, &edx);
     fam = ((eax & 0xf00) >> 8) + ((eax & 0xff00000) >> 20);
     model = ((eax & 0xf0000) >> 12) + ((eax & 0xf0) >> 4);
     logical_cores = (ebx >> 16) & 0xFF;
 
-    __get_cpuid(0x8000001E, &eax, &ebx, &ecx, &edx);
-    threads_per_core = ((ebx >> 8) & 0xF) + 1;
+    get_fuse_topology(fam, model, &ccds_enabled, &ccds_disabled, &core_disable_map, &smt);
 
-    fuse1 = 0x5D218;
-    fuse2 = 0x5D21C;
-    offs = 0x238;
+    *ccds = count_set_bits(ccds_enabled);
 
     if (fam == 0x19) {
-        fuse1 += 0x10;
-        fuse2 += 0x10;
-        offs = 0x598;
+        *ccxs = *ccds;
+        *cores_per_ccx = 8 - count_set_bits(core_disable_map);
     }
-    else if (fam == 0x17 && model != 0x71) {
-        fuse1 += 0x40;
-        fuse2 += 0x40;
-    }
-
-    if (smu_read_smn_addr(&obj, fuse1, &ccds_present) != SMU_Return_OK ||
-        smu_read_smn_addr(&obj, fuse2, &ccds_down) != SMU_Return_OK) {
-        perror("Failed to read CCD fuses");
-        exit(-1);
+    else {
+        *ccxs = *ccds * 2;
+        *cores_per_ccx = (8 - count_set_bits(core_disable_map)) / 2;
     }
 
-    ccd_enable_map = (ccds_present >> 22) & 0xff;
-    ccd_disable_map = ((ccds_present >> 30) & 0x3) | ((ccds_down & 0x3f) << 2);
-
-    core_disable_map_addr = (0x30081800 + offs) | (((ccd_enable_map & 1) == 0) ? 0x2000000 : 0);
-
-    if (smu_read_smn_addr(&obj, core_disable_map_addr, &core_disable_map) != SMU_Return_OK) {
-        perror("Failed to read disabled core fuse");
-        exit(-1);
-    }
-
-    if (!threads_per_core)
-        *cores = logical_cores;
-    else
-        *cores = logical_cores / threads_per_core;
-
-    *cores_per_ccx = (8 - count_set_bits(core_disable_map & 0xff)) / 2;
-    *ccds = count_set_bits(ccd_enable_map);
-    *ccxs = *cores == *cores_per_ccx ? 1 : *ccds * 2;
+    *cores = logical_cores;
+    if (smt)
+        *cores /= 2;
 }
 
 void print_line(const char* label, const char* value_format, ...) {
