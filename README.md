@@ -343,6 +343,56 @@ When executing an SMU command, either by reading `pm_table` or manually, via `sm
 For example, on slower or busy systems, the SMU may be tied up resulting in commands taking longer
 to execute than normal. Allowed range is from `500` to `32768`, defaulting to `8192`.
 
+## Userspace Library
+
+Included in this project is a userspace library, located at [/lib](lib) to allow easy interaction
+with the driver. More details of the methods provided may be found in [libsmu.h](lib/libsmu.h).
+
+Example usage of the library is detailed below:
+
+```cpp
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <libsmu.h>
+
+#define TEST_SMN_ADDR 0x50200
+
+int main(int argc, char** argv) {
+    smu_obj_t obj;
+    unsigned int result;
+
+    // Userspace library requires root permissions to access driver.
+    if (getuid() != 0 && geteuid() != 0) {
+        fprintf(stderr, "Program must be run as root.\n");
+        exit(-1);
+    }
+
+    // Initialize the library for use with the program.
+    if (smu_init(&obj) != SMU_Return_OK) {
+        fprintf(stderr, "Error initializing userspace library.\n");
+        exit(-2);
+    }
+
+    printf("Processor Codename: %s\n", smu_codename_to_str(&obj));
+    printf("SMU FW: %s\n", smu_get_fw_version(&obj));
+
+    if (smu_read_smn_addr(&obj, TEST_SMN_ADDR, &result) != SMU_Return_OK) {
+        fprintf(stderr, "Error reading SMN address: 0x%08x\n", TEST_SMN_ADDR);
+        exit(-3);
+    }
+    printf("SMN [0x%08x]: 0x%08x\n", TEST_SMN_ADDR, result);
+
+    // Cleanup after library use has ended.
+    smu_free(&obj);
+
+    return 0;
+}
+```
+
+N.B. This header file must be compatible with the version of the driver installed.
+
+
 ## Example Usage
 
 For Matisse & Vermeer processors, there are several commands that are known to work:

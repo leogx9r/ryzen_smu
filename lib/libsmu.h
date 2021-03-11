@@ -181,7 +181,7 @@ const char* smu_get_fw_version(smu_obj_t* obj);
 /**
  * Reads or writes a 32 bit word from the SMN address space.
  */
-unsigned int smu_read_smn_addr(smu_obj_t* obj, unsigned int address, unsigned int* result);
+smu_return_val smu_read_smn_addr(smu_obj_t* obj, unsigned int address, unsigned int* result);
 smu_return_val smu_write_smn_addr(smu_obj_t* obj, unsigned int address, unsigned int value);
 
 /**

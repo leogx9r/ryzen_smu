@@ -243,7 +243,7 @@ const char* smu_get_fw_version(smu_obj_t* obj) {
     return fw;
 }
 
-unsigned int smu_read_smn_addr(smu_obj_t* obj, unsigned int address, unsigned int* result) {
+smu_return_val smu_read_smn_addr(smu_obj_t* obj, unsigned int address, unsigned int* result) {
     unsigned int ret;
 
     pthread_mutex_lock(&obj->lock[SMU_MUTEX_SMN]);
