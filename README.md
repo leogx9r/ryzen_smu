@@ -44,7 +44,7 @@ permissions (for obvious reasons):
 - `/sys/kernel/ryzen_smu_drv/smu_args`
 - `/sys/kernel/ryzen_smu_drv/mp1_smu_cmd`
 - `/sys/kernel/ryzen_smu_drv/smn`
-- `/sys/kernel/ryzen_smu_drv/rsmu_cmd` (Not present on `Rembrant`, `Vangogh`, `Cezanne` and `Milan`)
+- `/sys/kernel/ryzen_smu_drv/rsmu_cmd` (Not present on `Rembrant`, `Vangogh` and `Milan`)
 
 For supported PM table models where RSMU is also supported, the following files are additionally
 exposed:

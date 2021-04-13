@@ -443,6 +443,7 @@ u64 smu_get_dram_base_address(struct pci_dev* dev) {
             fn[0] = 0x06;
             goto BASE_ADDR_CLASS_1;
         case CODENAME_RENOIR:
+        case CODENAME_CEZANNE:
             fn[0] = 0x66;
             goto BASE_ADDR_CLASS_1;
         case CODENAME_COLFAX:
@@ -534,6 +535,9 @@ enum smu_return_val smu_transfer_table_to_dram(struct pci_dev* dev) {
         case CODENAME_VERMEER:
             fn = 0x05;
             break;
+        case CODENAME_CEZANNE:
+            fn = 0x65;
+            break;
         case CODENAME_RENOIR:
             args.s.arg0 = 3;
             fn = 0x65;
@@ -571,6 +575,7 @@ enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) 
             fn = 0x08;
             break;
         case CODENAME_RENOIR:
+        case CODENAME_CEZANNE:
             fn = 0x06;
             break;
         default:
@@ -641,6 +646,15 @@ u32 smu_update_pmtable_size(u32 version) {
                     break;
                 case 0x370005:
                     g_smu.pm_dram_map_size = 0x8C8;
+                    break;
+                default:
+                    goto UNKNOWN_PM_TABLE_VERSION;
+            }
+            break;
+        case CODENAME_CEZANNE:
+            switch (version) {
+                case 0x400005:
+                    g_smu.pm_dram_map_size = 0x944;
                     break;
                 default:
                     goto UNKNOWN_PM_TABLE_VERSION;
