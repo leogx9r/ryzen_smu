@@ -377,7 +377,7 @@ void get_fuse_topology(int fam, int model, unsigned int* ccds_enabled, unsigned 
     *smt_enabled = (core_fuse & (1 << 8)) != 0;
 }
 
-unsigned int get_processor_topology(unsigned int* ccds, unsigned int *ccxs,
+void get_processor_topology(unsigned int* ccds, unsigned int *ccxs,
     unsigned int *cores_per_ccx, unsigned int* cores) {
     unsigned int  ccds_enabled, ccds_disabled, core_disable_map, logical_cores,
         smt, fam, model, eax, ebx, ecx, edx;
@@ -434,12 +434,26 @@ void _print_core_line(const char* label, const char* value_format, ...) {
     _print_core_line(buffer, value, __VA_ARGS__); \
 }
 
+unsigned int get_max_cpu_freq(smu_obj_t* obj) {
+    smu_arg_t args;
+    smu_return_val err;
+
+    if (obj->codename != CODENAME_MATISSE)
+        return 0;
+
+    memset(&args, 0, sizeof(args));
+    if (smu_send_command(obj, 0x6E, &args, TYPE_RSMU) != SMU_Return_OK)
+        return 0;
+
+    return args.args[0];
+}
+
 void start_pm_monitor(int force) {
     float total_usage, peak_core_frequency, core_voltage, core_frequency, total_core_voltage,
-        average_voltage, package_sleep_time, core_sleep_time, edc_value, total_core_CC6;
+        average_voltage, package_sleep_time, core_sleep_time, edc_value, total_core_C6;
 
     const char* name, *codename, *smu_fw_ver;
-    unsigned int cores, ccds, ccxs, cores_per_ccx, if_ver, i;
+    unsigned int cores, ccds, ccxs, cores_per_ccx, max_freq, if_ver, i;
     ppm_table_0x240903 pmt;
     unsigned char *pm_buf;
 
@@ -456,6 +470,7 @@ void start_pm_monitor(int force) {
     name        = get_processor_name();
     codename    = smu_codename_to_str(&obj);
     smu_fw_ver  = smu_get_fw_version(&obj);
+    max_freq    = get_max_cpu_freq(&obj);
 
     get_processor_topology(&ccds, &ccxs, &cores_per_ccx, &cores);
 
@@ -483,7 +498,6 @@ void start_pm_monitor(int force) {
             break;
     }
 
-
     while(1) {
         if (smu_read_pm_table(&obj, pm_buf, obj.pm_table_size) != SMU_Return_OK)
             continue;
@@ -497,11 +511,13 @@ void start_pm_monitor(int force) {
         print_line("Core CCDs", "%d", ccds);
         print_line("Core CCXs", "%d", ccxs);
         print_line("Cores Per CCX", "%d", cores_per_ccx);
+        if (max_freq)
+            print_line("Maximum Frequency", "%d MHz", max_freq);
         print_line("SMU FW Version", "v%s", smu_fw_ver);
         print_line("MP1 IF Version", "v%d", if_ver);
         fprintf(stdout, "╰────────────────────────────────────────────────┴─────────────────────────────────────────────────╯\n");
 
-        total_core_CC6 = total_usage = total_core_voltage = peak_core_frequency = 0;
+        total_core_C6 = total_usage = total_core_voltage = peak_core_frequency = 0;
 
         package_sleep_time = pmt->PC6 / 100.f;
         average_voltage = (pmt->CPU_TELEMETRY_VOLTAGE - (0.2 * package_sleep_time)) /
@@ -515,7 +531,7 @@ void start_pm_monitor(int force) {
                 peak_core_frequency = core_frequency;
 
             total_usage += pmt->CORE_C0[i];
-            total_core_CC6 += pmt->CORE_CC6[i];
+            total_core_C6 += pmt->CORE_CC6[i];
 
             // "Real core frequency" -- excluding gating
             if (pmt->CORE_FREQ[i] != 0.f) {
@@ -547,15 +563,15 @@ void start_pm_monitor(int force) {
         if (edc_value < pmt->TDC_VALUE)
             edc_value = pmt->TDC_VALUE;
 
-        total_core_CC6 /= cores;
+        total_core_C6 /= cores;
 
         print_line("Peak Core Frequency", "%8.0f MHz", peak_core_frequency);
         print_line("Peak Temperature", "%8.2f C", pmt->PEAK_TEMP);
         print_line("Package Power", "%8.4f W", pmt->SOCKET_POWER);
         print_line("Peak Core(s) Voltage", "%2.6f V", pmt->CPU_TELEMETRY_VOLTAGE);
         print_line("Average Core Voltage", "%2.6f V", average_voltage);
-        print_line("Package CC6", "%3.6f %%", pmt->PC6);
-        print_line("Core CC6", "%3.6f %%", total_core_CC6);
+        print_line("Package C6", "%3.6f %%", pmt->PC6);
+        print_line("Core C6", "%3.6f %%", total_core_C6);
         fprintf(stdout, "╰────────────────────────────────────────────────┴─────────────────────────────────────────────────╯\n");
 
         fprintf(stdout, "╭────────────────────────────────────────────────┬─────────────────────────────────────────────────╮\n");
