@@ -29,6 +29,7 @@ can also be accessed:
 
 - [Vermeer](https://en.wikichip.org/wiki/amd/cores/vermeer) ( Ryzen 5000 Desktop Series )
 - [Matisse](https://en.wikichip.org/wiki/amd/cores/matisse) ( Ryzen 3000 Desktop Series )
+- [Cezanne](https://en.wikichip.org/wiki/amd/cores/cezanne) ( Ryzen 5000[GE] APU Series )
 - [Renoir](https://en.wikichip.org/wiki/amd/cores/renoir)  ( Ryzen 4000[UGHS] APU Series )
 - [Picasso](https://en.wikichip.org/wiki/amd/cores/picasso) ( Ryzen 3000[UGHS] APU Series )
 - [Raven Ridge](https://en.wikichip.org/wiki/amd/cores/raven_ridge) ( Ryzen 2000[GEU] APU Series )
