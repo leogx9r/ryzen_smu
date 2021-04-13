@@ -2,8 +2,13 @@
 
 <img src="pics/preview1.jpg" width="400" height="650"> <img src="pics/preview2.jpg" width="400" height="650">
 
+<small>*N.B. Images above shows the potential capabilities of this driver, retrieved using the
+[monitor_cpu](userspace/monitor_cpu.c)* utility. Other processors will require tweaking on the
+user's part or additional tools.</small>
+
 **Ryzen SMU** is a Linux kernel driver that exposes access to the SMU (System Management Unit) for
-certain AMD Ryzen Processors.
+certain AMD Ryzen Processors. ***Use at your own risk, the author takes no responsibility over
+potential damages that may result from the misuse of this driver or programs dependent upon it.***
 
 The following processor code names are supported:
 
