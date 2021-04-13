@@ -185,7 +185,7 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, smu_req_args_t
     //  at this time.
     for (i = 0; i < SMU_REQ_MAX_ARGS; i++)
         if (smu_read_address(dev, args_addr + (i * 4), &args->args[i]) != SMU_Return_OK)
-            pr_warn("Failed to fetch SMU ARG [%d]!\n", i);;
+            pr_warn("Failed to fetch SMU ARG [%d]!\n", i);
 
     mutex_unlock(&amd_smu_mutex);
 
