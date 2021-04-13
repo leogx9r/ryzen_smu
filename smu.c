@@ -619,11 +619,17 @@ u32 smu_update_pmtable_size(u32 version) {
                 case 0x380904:
                     g_smu.pm_dram_map_size = 0x5A4;
                     break;
+                case 0x380905:
+                    g_smu.pm_dram_map_size = 0x5D0;
+                    break;
                 case 0x2D0803:
                     g_smu.pm_dram_map_size = 0x894;
                     break;
                 case 0x380804:
                     g_smu.pm_dram_map_size = 0x8A4;
+                    break;
+                case 0x380805:
+                    g_smu.pm_dram_map_size = 0x8F0;
                     break;
                 default:
                     goto UNKNOWN_PM_TABLE_VERSION;
