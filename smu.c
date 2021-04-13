@@ -316,6 +316,7 @@ int smu_init(struct pci_dev* dev) {
             goto LOG_RSMU;
         case CODENAME_RENOIR:
         case CODENAME_PICASSO:
+        case CODENAME_CEZANNE:
         case CODENAME_RAVENRIDGE:
         case CODENAME_RAVENRIDGE2:
         case CODENAME_DALI:
@@ -326,7 +327,6 @@ int smu_init(struct pci_dev* dev) {
             // Note: This **MAY** use the same mailbox as Matisse but untested at this time.
         case CODENAME_VANGOGH:
         case CODENAME_REMBRANT:
-        case CODENAME_CEZANNE:
         case CODENAME_MILAN:
             pr_debug("RSMU Mailbox: Not supported or unknown, disabling use.");
             goto MP1_DETECT;
