@@ -21,7 +21,7 @@
  */
 
 /* Maximum size in bytes, of the PM table for any processor codename. */
-#define PM_TABLE_MAX_SIZE                             0x8C8
+#define PM_TABLE_MAX_SIZE                             0x944
 
 /* Specifies the amount of attempts an of polling the SMU for a command response till it fails. */
 #define SMU_RETRIES_MAX                               32768
