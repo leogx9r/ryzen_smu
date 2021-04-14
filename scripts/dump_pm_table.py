@@ -69,7 +69,7 @@ def getCodeName():
         "Raven Ridge 2",
         "Summit Ridge",
         "Pinnacle Ridge",
-        "Rembrant",
+        "Rembrandt",
         "Vermeer",
         "Vangogh",
         "Cezanne",

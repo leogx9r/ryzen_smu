@@ -22,7 +22,7 @@ The following processor code names are supported:
 - Raven Ridge 2
 - Summit Ridge
 - Pinnacle Ridge
-- Rembrant
+- Rembrandt
 - Vermeer
 - Vangogh
 - Cezanne
@@ -50,7 +50,7 @@ permissions (for obvious reasons):
 - `/sys/kernel/ryzen_smu_drv/smu_args`
 - `/sys/kernel/ryzen_smu_drv/mp1_smu_cmd`
 - `/sys/kernel/ryzen_smu_drv/smn`
-- `/sys/kernel/ryzen_smu_drv/rsmu_cmd` (Not present on `Rembrant`, `Vangogh` and `Milan`)
+- `/sys/kernel/ryzen_smu_drv/rsmu_cmd` (Not present on `Rembrandt`, `Vangogh` and `Milan`)
 
 For supported PM table models where RSMU is also supported, the following files are additionally
 exposed:
@@ -227,7 +227,7 @@ enumeration:
 | 08h | 8       | Raven Ridge 2  |
 | 09h | 9       | Summit Ridge   |
 | 0Ah | 10      | Pinnacle Ridge |
-| 0Bh | 11      | Rembrant       |
+| 0Bh | 11      | Rembrandt      |
 | 0Ch | 12      | Vermeer        |
 | 0Dh | 13      | Vangogh        |
 | 0Eh | 14      | Cezanne        |

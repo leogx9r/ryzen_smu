@@ -415,8 +415,8 @@ const char* smu_codename_to_str(smu_obj_t* obj) {
             return "Summit Ridge";
         case CODENAME_THREADRIPPER:
             return "Thread Ripper";
-        case CODENAME_REMBRANT:
-            return "Rembrant";
+        case CODENAME_REMBRANDT:
+            return "Rembrandt";
         case CODENAME_VERMEER:
             return "Vermeer";
         case CODENAME_VANGOGH:

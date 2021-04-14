@@ -174,7 +174,7 @@ def test_get_codename():
         "Raven Ridge 2",
         "Summit Ridge",
         "Pinnacle Ridge",
-        "Rembrant",
+        "Rembrandt",
         "Vermeer",
         "Vangogh",
         "Cezanne",

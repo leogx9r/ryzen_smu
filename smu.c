@@ -271,7 +271,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
                 g_smu.codename = CODENAME_VERMEER;
                 break;
             case 0x40:
-                g_smu.codename = CODENAME_REMBRANT;
+                g_smu.codename = CODENAME_REMBRANDT;
                 break;
             case 0x50:
                 g_smu.codename = CODENAME_CEZANNE;
@@ -326,7 +326,7 @@ int smu_init(struct pci_dev* dev) {
             goto LOG_RSMU;
             // Note: This **MAY** use the same mailbox as Matisse but untested at this time.
         case CODENAME_VANGOGH:
-        case CODENAME_REMBRANT:
+        case CODENAME_REMBRANDT:
         case CODENAME_MILAN:
             pr_debug("RSMU Mailbox: Not supported or unknown, disabling use.");
             goto MP1_DETECT;
@@ -377,7 +377,7 @@ MP1_DETECT:
             g_smu.addr_mp1_mb_args  = 0x3B10998;
             break;
         case CODENAME_VANGOGH:
-        case CODENAME_REMBRANT:
+        case CODENAME_REMBRANDT:
         case CODENAME_MILAN:
             g_smu.mp1_if_ver       = IF_VERSION_13;
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
