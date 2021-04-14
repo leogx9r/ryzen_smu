@@ -84,8 +84,6 @@ typedef enum {
     CODENAME_RAVENRIDGE2,
     CODENAME_SUMMITRIDGE,
     CODENAME_PINNACLERIDGE,
-
-    // Not yet supported but still added for now.
     CODENAME_REMBRANT,
     CODENAME_VERMEER,
     CODENAME_VANGOGH,
@@ -120,7 +118,7 @@ enum SMU_MUTEX_LOCK {
 };
 
 typedef struct {
-    /* Accessible To Users */
+    /* Accessible To Users, Read-Only. */
     int                         init;
     int                         driver_version;
 
@@ -164,9 +162,12 @@ typedef union {
 
 /**
  * Initializes or frees the userspace library for use.
- * Upon successful initialization, users are allowed to access
- *  codename, smu_version, pm_table_size and pm_table_version from
- *  the initialized structure.
+ * Upon successful initialization, users are allowed to access the following members:
+ *  - codename
+ *  - smu_if_version
+ *  - smu_version
+ *  - pm_table_size
+ *  - pm_table_version
  *
  * Returns SMU_Return_OK on success.
  */
