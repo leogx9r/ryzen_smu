@@ -45,7 +45,7 @@
 /* Maximum is defined as: "255.255.255.255\n" */
 #define LIBSMU_MAX_SMU_VERSION_LEN      16
 
-int try_open_path(const char* pathname, int mode, int* fd) {
+static int try_open_path(const char* pathname, int mode, int* fd) {
     int ret = 1;
 
     *fd = open(pathname, mode);
@@ -57,7 +57,7 @@ int try_open_path(const char* pathname, int mode, int* fd) {
     return ret;
 }
 
-smu_return_val smu_init_parse(smu_obj_t* obj) {
+static smu_return_val smu_init_parse(smu_obj_t* obj) {
     int ver_maj, ver_min, ver_rev, ver_alt, len, i, c;
     char rd_buf[1024];
     int tmp_fd, ret;
