@@ -12,52 +12,52 @@ potential damages that may result from the misuse of this driver or programs dep
 
 The following processor code names are supported:
 
-- Colfax
-- Renoir
-- Picasso
-- Matisse
-- Threadripper
-- Castle Peak
-- Raven Ridge
-- Raven Ridge 2
-- Summit Ridge
-- Pinnacle Ridge
-- Rembrandt
-- Vermeer
-- Vangogh
-- Cezanne
-- Milan
-- Dali
+- [Colfax](https://en.wikichip.org/wiki/amd/cores/colfax)
+- [Renoir](https://en.wikichip.org/wiki/amd/cores/renoir)
+- [Picasso](https://en.wikichip.org/wiki/amd/cores/picasso)
+- [Matisse](https://en.wikichip.org/wiki/amd/cores/matisse)
+- [Castle Peak](https://en.wikichip.org/wiki/amd/cores/castle_peak)
+- [Raven Ridge](https://en.wikichip.org/wiki/amd/cores/raven_ridge)
+- [Raven Ridge 2](https://www.techpowerup.com/gpu-specs/amd-raven-2.g888)
+- [Summit Ridge](https://en.wikichip.org/wiki/amd/cores/summit_ridge)
+- [Pinnacle Ridge](https://en.wikichip.org/wiki/amd/cores/pinnacle_ridge)
+- [Rembrandt](https://en.wikichip.org/wiki/amd/cores/rembrandt)
+- [Vermeer](https://en.wikichip.org/wiki/amd/cores/vermeer)
+- [Vangogh](https://en.wikichip.org/wiki/amd/cores/vangogh)
+- [Cezanne](https://en.wikichip.org/wiki/amd/cores/cezanne)
+- [Milan](https://en.wikichip.org/wiki/amd/cores/milan)
+- [Dali](https://en.wikichip.org/wiki/amd/cores/dali)
 
 In addition, for the following models, the power metrics/monitoring (PM) table (seen in screenshot)
 can also be accessed:
 
-- [Vermeer](https://en.wikichip.org/wiki/amd/cores/vermeer) ( Ryzen 5000 Desktop Series )
-- [Matisse](https://en.wikichip.org/wiki/amd/cores/matisse) ( Ryzen 3000 Desktop Series )
-- [Cezanne](https://en.wikichip.org/wiki/amd/cores/cezanne) ( Ryzen 5000[GE] APU Series )
-- [Renoir](https://en.wikichip.org/wiki/amd/cores/renoir)  ( Ryzen 4000[UGHS] APU Series )
-- [Picasso](https://en.wikichip.org/wiki/amd/cores/picasso) ( Ryzen 3000[UGHS] APU Series )
-- [Raven Ridge](https://en.wikichip.org/wiki/amd/cores/raven_ridge) ( Ryzen 2000[GEU] APU Series )
-- [Raven Ridge 2](https://www.techpowerup.com/gpu-specs/amd-raven-2.g888)
+- Vermeer ( Ryzen 5000 Desktop Series )
+- Matisse ( Ryzen 3000 Desktop Series )
+- Cezanne ( Ryzen 5000[GE] APU Series )
+- Renoir ( Ryzen 4000[UGHS] APU Series )
+- Picasso ( Ryzen 3000[UGHS] APU Series )
+- Raven Ridge ( Ryzen 2000[GEU] APU Series )
+- Raven Ridge 2
 
 When loaded, the driver exposes several files under sysfs which can only be read with root
-permissions (for obvious reasons):
+permissions (for obvious reasons) at the root path `/sys/kernel/ryzen_smu_drv`:
 
-- `/sys/kernel/ryzen_smu_drv/drv_version`
-- `/sys/kernel/ryzen_smu_drv/version`
-- `/sys/kernel/ryzen_smu_drv/mp1_if_version`
-- `/sys/kernel/ryzen_smu_drv/codename`
-- `/sys/kernel/ryzen_smu_drv/smu_args`
-- `/sys/kernel/ryzen_smu_drv/mp1_smu_cmd`
-- `/sys/kernel/ryzen_smu_drv/smn`
-- `/sys/kernel/ryzen_smu_drv/rsmu_cmd` (Not present on `Rembrandt`, `Vangogh` and `Milan`)
+- `drv_version`
+- `version`
+- `mp1_if_version`
+- `codename`
+- `smu_args`
+- `mp1_smu_cmd`
+- `smn`
+- `rsmu_cmd` (Not present on `Rembrandt`, `Vangogh` and `Milan`)
 
 For supported PM table models where RSMU is also supported, the following files are additionally
 exposed:
 
-- `/sys/kernel/ryzen_smu_drv/pm_table_version`
-- `/sys/kernel/ryzen_smu_drv/pm_table_size`
-- `/sys/kernel/ryzen_smu_drv/pm_table`
+- `pm_table_version`
+- `pm_table_size`
+- `pm_table`
+
 
 
 ## Installation
@@ -96,6 +96,20 @@ cd ryzen_smu
 
 make
 sudo insmod ryzen_smu.ko
+```
+
+## Auto-Loading On System Startup
+
+Assuming you are using `systemd`, the kernel module may be loaded automatically upon system startup
+using [`modules-load.d`](https://www.freedesktop.org/software/systemd/man/modules-load.d.html) by
+adding the module name to `/etc/modules-load.d/<name>.conf`
+
+Example:
+
+```sh
+# /etc/modules-load.d/ryzen_smu.conf
+# Load ryzen_smu driver upon startup
+ryzen_smu
 ```
 
 ## Confirming Module Works
