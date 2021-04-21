@@ -422,7 +422,13 @@ N.B. This header file must be compatible with the version of the driver installe
 
 ## Example Usage
 
-For Matisse & Vermeer processors, there are several commands that are known to work:
+For Matisse & Vermeer processors, there are several commands that are known to work. See
+[rsmu_commands.md](docs/rsmu_commands.md) for more information.
+
+Commands may be executed either programatically using the library or under a shell by writing to the
+designated files.
+
+Example usage via shell:
 
 ```sh
 # Note: Does not persist across reboots
