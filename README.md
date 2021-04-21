@@ -328,19 +328,26 @@ The following table lists the known characteristics per version:
 | 0x1E0004 | Raven Ridge | 0x6AC            |
 | 0x1E0005 | Raven Ridge | 0x6AC            |
 | 0x1E0101 | Raven Ridge | 0x6AC            |
+|          |             |                  |
 | 0x240802 | Matisse     | 0x7E0            |
 | 0x240803 | Matisse     | 0x7E4            |
 | 0x240902 | Matisse     | 0x514            |
 | 0x240903 | Matisse     | 0x518            |
+|          |             |                  |
 | 0x2D0803 | Vermeer     | 0x894            |
 | 0x380804 | Vermeer     | 0x8A4            |
+| 0x380804 | Vermeer     | 0x8F0            |
 | 0x2D0903 | Vermeer     | 0x594            |
 | 0x380904 | Vermeer     | 0x5A4            |
+| 0x380905 | Vermeer     | 0x5D0            |
+|          |             |                  |
 | 0x370000 | Renoir      | 0x794            |
 | 0x370001 | Renoir      | 0x884            |
 | 0x370002 | Renoir      | 0x88C            |
 | 0x370004 | Renoir      | 0x8AC            |
 | 0x370005 | Renoir      | 0x8C8            |
+|          |             |                  |
+| 0x400005 | Cezanne     | 0x944            |
 
 Note: File is a 32 bit word encoded in little-endian binary order.
 
