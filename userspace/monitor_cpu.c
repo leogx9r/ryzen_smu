@@ -678,6 +678,44 @@ void signal_interrupt(int sig) {
     }
 }
 
+// Checks if the program has the required permissions for the driver.
+// If it doesn't, it attempts to re-execute the program using `sudo`.
+// If the sudo executable cannot be located, it will bail with an error message.
+int elevate_if_necessary(int argc, char** argv) {
+    static const char* access_paths[] = { "/bin", "/sbin", "/usr/bin", "/usr/sbin" };
+
+    char buf[1024], cmd[1024];
+    int euid, found, i;
+
+    if (geteuid() == 0)
+        return 1;
+
+    found = 0;
+    for (i = 0; i < sizeof(access_paths) / sizeof(access_paths[0]); i++) {
+        sprintf(buf, "%s/sudo", access_paths[i]);
+
+        if (!access(buf, F_OK)) {
+            found = 1;
+            break;
+        }
+    }
+
+    sprintf(cmd, "%s -S ", buf);
+    if (!found || !readlink("/proc/self/exe", buf, sizeof(buf))) {
+        fprintf(stderr, "Program must be run as root.\n");
+        exit(-2);
+    }
+
+    strcat(cmd, buf);
+    for (i = 1; i < argc; i++) {
+        sprintf(buf, " %s", argv[i]);
+        strcat(cmd, buf);
+    }
+
+    system(cmd);
+    return 0;
+}
+
 int main(int argc, char** argv) {
     smu_return_val ret;
 
@@ -688,10 +726,8 @@ int main(int argc, char** argv) {
         exit(-1);
     }
 
-    if (getuid() != 0 && geteuid() != 0) {
-        fprintf(stderr, "Program must be run as root.\n");
-        exit(-2);
-    }
+    if (!elevate_if_necessary(argc, argv))
+        exit(0);
 
     ret = smu_init(&obj);
     if (ret != SMU_Return_OK) {
