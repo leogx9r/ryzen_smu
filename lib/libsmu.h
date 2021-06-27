@@ -119,14 +119,14 @@ enum SMU_MUTEX_LOCK {
 
 typedef struct {
     /* Accessible To Users, Read-Only. */
-    int                         init;
-    int                         driver_version;
+    unsigned int                init;
+    unsigned int                driver_version;
 
     smu_processor_codename      codename;
     smu_if_version              smu_if_version;
-    int                         smu_version;
-    int                         pm_table_size;
-    int                         pm_table_version;
+    unsigned int                smu_version;
+    unsigned int                pm_table_size;
+    unsigned int                pm_table_version;
 
     /* Internal Library Use Only */
     int                         fd_smn;
@@ -171,7 +171,7 @@ typedef union {
  *
  * Returns SMU_Return_OK on success.
  */
-int smu_init(smu_obj_t* obj);
+smu_return_val smu_init(smu_obj_t* obj);
 void smu_free(smu_obj_t* obj);
 
 /**

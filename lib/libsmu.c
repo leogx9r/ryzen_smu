@@ -96,8 +96,8 @@ static smu_return_val smu_init_parse(smu_obj_t* obj) {
         if (rd_buf[i] == '.')
             c++;
 
-    // Depending on the processor, there can be either a 3 or 4 part segment.
-    // We account for both
+    // Depending on the processor, there can be either a 3 or 4 part version segmentation.
+    // We account for both.
     switch (c) {
         case 2:
             ret = sscanf(rd_buf, "%d.%d.%d\n", &ver_maj, &ver_min, &ver_rev);
@@ -168,7 +168,7 @@ static smu_return_val smu_init_parse(smu_obj_t* obj) {
     return SMU_Return_OK;
 }
 
-int smu_init(smu_obj_t* obj) {
+smu_return_val smu_init(smu_obj_t* obj) {
     int i, ret;
 
     memset(obj, 0, sizeof(*obj));
@@ -203,6 +203,9 @@ int smu_init(smu_obj_t* obj) {
 void smu_free(smu_obj_t* obj) {
     int i;
 
+    if (!obj->init)
+        return;
+
     if (obj->fd_smn)
         close(obj->fd_smn);
 
@@ -230,6 +233,7 @@ const char* smu_get_fw_version(smu_obj_t* obj) {
     if (!obj->init)
         return "Uninitialized";
 
+    // Determine if this is a 24-bit or 32-bit version and show it accordingly.
     if (obj->smu_version & 0xff000000) {
         sprintf(fw, "%d.%d.%d.%d",
             (obj->smu_version >> 24) & 0xff, (obj->smu_version >> 16) & 0xff,
@@ -245,6 +249,10 @@ const char* smu_get_fw_version(smu_obj_t* obj) {
 
 smu_return_val smu_read_smn_addr(smu_obj_t* obj, unsigned int address, unsigned int* result) {
     unsigned int ret;
+
+    // Don't attempt to execute without initialization.
+    if (!obj->init)
+        return SMU_Return_Failed;
 
     pthread_mutex_lock(&obj->lock[SMU_MUTEX_SMN]);
 
@@ -266,6 +274,12 @@ BREAK_OUT:
 smu_return_val smu_write_smn_addr(smu_obj_t* obj, unsigned int address, unsigned int value) {
     unsigned int buffer[2], ret;
 
+    // Don't attempt to execute without initialization.
+    if (!obj->init)
+        return SMU_Return_Failed;
+
+    // buffer[0] contains the destination write target.
+    // buffer[1] contains the value to write to the address.
     buffer[0] = address;
     buffer[1] = value;
 
@@ -283,6 +297,10 @@ smu_return_val smu_send_command(smu_obj_t* obj, unsigned int op, smu_arg_t* args
     enum smu_mailbox mailbox) {
     unsigned int ret, status, fd_smu_cmd;
 
+    // Don't attempt to execute without initialization.
+    if (!obj->init)
+        return SMU_Return_Failed;
+
     switch (mailbox) {
         case TYPE_RSMU:
             fd_smu_cmd = obj->fd_rsmu_cmd;
@@ -294,7 +312,7 @@ smu_return_val smu_send_command(smu_obj_t* obj, unsigned int op, smu_arg_t* args
             return SMU_Return_Unsupported;
     }
 
-    // Check if fd is valid
+    // Check if fd is valid.
     if (!fd_smu_cmd)
         return SMU_Return_Unsupported;
 
@@ -316,6 +334,9 @@ smu_return_val smu_send_command(smu_obj_t* obj, unsigned int op, smu_arg_t* args
         goto BREAK_OUT;
     }
 
+    // Commands should be completed instantly as the driver attempts to continuously
+    //  execute it till a timeout has occurred and immediately updates the result.
+    // Therefore it shouldn't be necessary to apply any sort of waiting here.
     lseek(fd_smu_cmd, 0, SEEK_SET);
     ret = read(fd_smu_cmd, &status, sizeof(status));
 
@@ -339,6 +360,10 @@ BREAK_OUT:
 
 smu_return_val smu_read_pm_table(smu_obj_t* obj, unsigned char* dst, size_t dst_len) {
     int ret;
+
+    // Don't attempt to execute without initialization.
+    if (!obj->init)
+        return SMU_Return_Failed;
 
     if (dst_len != obj->pm_table_size)
         return SMU_Return_InsufficientSize;
