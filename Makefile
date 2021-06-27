@@ -1,4 +1,4 @@
-VERSION					:= 0.0.1
+VERSION					:= 0.1.2
 TARGET					:= $(shell uname -r)
 DKMS_ROOT_PATH			:= /usr/src/ryzen_smu-$(VERSION)
 
