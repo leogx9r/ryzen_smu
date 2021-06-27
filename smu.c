@@ -13,21 +13,28 @@
 static struct {
     enum smu_processor_codename    codename;
 
+    // Optional RSMU mailbox addresses.
     u32                            addr_rsmu_mb_cmd;
     u32                            addr_rsmu_mb_rsp;
     u32                            addr_rsmu_mb_args;
 
+    // Mandatory MP1 mailbox addresses.
     enum smu_if_version            mp1_if_ver;
     u32                            addr_mp1_mb_cmd;
     u32                            addr_mp1_mb_rsp;
     u32                            addr_mp1_mb_args;
 
+    // Optional PM table information.
     u64                            pm_dram_base;
     u32                            pm_dram_base_alt;
     u32                            pm_dram_map_size;
     u32                            pm_dram_map_size_alt;
+
+    // Internal tracker to determine the minimum interval required to
+    //  refresh the metrics table.
     u32                            pm_jiffies;
 
+    // Virtual addresses mapped to physical DRAM bases for PM table.
     u8 __iomem*                    pm_table_virt_addr;
     u8 __iomem*                    pm_table_virt_addr_alt;
 } g_smu = {
@@ -52,6 +59,8 @@ static struct {
     .pm_table_virt_addr_alt      = NULL,
 };
 
+// Both mutexes are defined separately because the SMN address space can be used
+//  independently from the SMU but the SMU requires access to the SMN to execute commands.
 static DEFINE_MUTEX(amd_pci_mutex);
 static DEFINE_MUTEX(amd_smu_mutex);
 
@@ -145,14 +154,14 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, smu_req_args_t
         return SMU_Return_CommandTimeout;
     }
 
-    // Step 2: Write zero (0) to the RSP register
+    // Step 2: Write zero (0) to the RSP register.
     smu_write_address(dev, rsp_addr, 0);
 
-    // Step 3: Write the argument(s) into the argument register(s)
+    // Step 3: Write the argument(s) into the argument register(s).
     for (i = 0; i < SMU_REQ_MAX_ARGS; i++)
         smu_write_address(dev, args_addr + (i * 4), args->args[i]);
 
-    // Step 4: Write the message Id into the Message ID register
+    // Step 4: Write the message Id into the Message ID register.
     smu_write_address(dev, cmd_addr, op);
 
     // Step 5: Wait until the Response register is non-zero.
@@ -297,7 +306,7 @@ int smu_init(struct pci_dev* dev) {
     if (smu_resolve_cpu_class(dev))
         return -ENODEV;
 
-    // Detect RSMU
+    // Detect RSMU mailbox address.
     switch (g_smu.codename) {
         case CODENAME_CASTLEPEAK:
         case CODENAME_MATISSE:
@@ -324,7 +333,6 @@ int smu_init(struct pci_dev* dev) {
             g_smu.addr_rsmu_mb_rsp  = 0x3B10A80;
             g_smu.addr_rsmu_mb_args = 0x3B10A88;
             goto LOG_RSMU;
-            // Note: This **MAY** use the same mailbox as Matisse but untested at this time.
         case CODENAME_VANGOGH:
         case CODENAME_REMBRANDT:
         case CODENAME_MILAN:
@@ -340,8 +348,7 @@ LOG_RSMU:
         g_smu.addr_rsmu_mb_cmd, g_smu.addr_rsmu_mb_rsp, g_smu.addr_rsmu_mb_args);
 
 MP1_DETECT:
-
-    // Detect MP1 SMU
+    // Detect MP1 SMU mailbox address.
     switch (g_smu.codename) {
         case CODENAME_COLFAX:
         case CODENAME_SUMMITRIDGE:
@@ -397,11 +404,18 @@ MP1_DETECT:
 
 void smu_cleanup(void) {
     // Unmap DRAM Base if required after SMU use
-    if (g_smu.pm_table_virt_addr)
+    if (g_smu.pm_table_virt_addr) {
         iounmap(g_smu.pm_table_virt_addr);
+        g_smu.pm_table_virt_addr = NULL;
+    }
 
-    if (g_smu.pm_table_virt_addr_alt)
+    if (g_smu.pm_table_virt_addr_alt) {
         iounmap(g_smu.pm_table_virt_addr_alt);
+        g_smu.pm_table_virt_addr_alt = NULL;
+    }
+
+    // Set SMU state to uninitialized, requiring a call to smu_init() again.
+    g_smu.codename = CODENAME_UNDEFINED;
 }
 
 enum smu_processor_codename smu_get_codename(void) {
@@ -528,6 +542,9 @@ enum smu_return_val smu_transfer_table_to_dram(struct pci_dev* dev) {
      * Physically mapped at the DRAM Base address(es).
      */
 
+    // Arg[0] here specifies the PM table when set to 0.
+    // For GPU ASICs, it seems there's more tables that can be found but for CPUs,
+    //  it seems this value is ignored.
     smu_args_init(&args, 0);
 
     switch (g_smu.codename) {
@@ -591,6 +608,8 @@ enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) 
 }
 
 u32 smu_update_pmtable_size(u32 version) {
+    // These sizes are actually accurate and not just "guessed".
+    // Source: Ryzen Master.
     switch (g_smu.codename) {
         case CODENAME_MATISSE:
             switch (version) {
@@ -669,6 +688,9 @@ u32 smu_update_pmtable_size(u32 version) {
         case CODENAME_PICASSO:
         case CODENAME_RAVENRIDGE:
         case CODENAME_RAVENRIDGE2:
+            // These codenames have two PM tables, a larger (primary) one and a smaller one.
+            // The size is always fixed to 0x608 and 0xA4 bytes each.
+            // Source: Ryzen Master.
             g_smu.pm_dram_map_size_alt = 0xA4;
             g_smu.pm_dram_map_size = 0x608 + g_smu.pm_dram_map_size_alt;
 
@@ -686,20 +708,27 @@ u32 smu_update_pmtable_size(u32 version) {
 enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, size_t* len) {
     u32 ret, version, size;
 
-    // The DRAM base does not change across boots meaning it only needs to be
+    // The DRAM base does not change after boot meaning it only needs to be
     //  fetched once.
+    // From testing, it also seems they are always mapped to the same address as well,
+    //  at least when running the same AGESA version.
     if (g_smu.pm_dram_base == 0 || g_smu.pm_dram_map_size == 0) {
         g_smu.pm_dram_base = smu_get_dram_base_address(dev);
 
+        // Verify returned value isn't an SMU return value.
         if (g_smu.pm_dram_base < 0xFF && g_smu.pm_dram_base >= 0) {
             pr_err("Unable to receive the DRAM base address: %X", (u8)g_smu.pm_dram_base);
             return g_smu.pm_dram_base;
         }
 
-        // Each model has different versions and sizes.
+        // Should help us catch where we missed table version initialization in the future.
+        version = 0xDEADC0DE;
+
+        // These models require finding the PM table version to determine its size.
         if (g_smu.codename == CODENAME_VERMEER ||
             g_smu.codename == CODENAME_MATISSE ||
-            g_smu.codename == CODENAME_RENOIR) {
+            g_smu.codename == CODENAME_RENOIR  ||
+            g_smu.codename == CODENAME_CEZANNE) {
             ret = smu_get_pm_table_version(dev, &version);
 
             if (ret != SMU_Return_OK) {
@@ -718,7 +747,7 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
             g_smu.pm_dram_map_size, g_smu.pm_dram_map_size_alt);
     }
 
-    // Validate output buffer size
+    // Validate output buffer size.
     // N.B. In the case of Picasso/RavenRidge 2, we include the secondary PM Table size as well
     if (*len < g_smu.pm_dram_map_size) {
         pr_warn("Insufficient buffer size for PM table read: %lu < %d",
@@ -746,6 +775,7 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
 
     // We only map the DRAM base(s) once for use.
     if (g_smu.pm_table_virt_addr == NULL) {
+        // From Linux documentation, it seems we should use _cache() for ioremap().
         g_smu.pm_table_virt_addr = ioremap_cache(g_smu.pm_dram_base, size);
 
         if (g_smu.pm_table_virt_addr == NULL) {
@@ -755,7 +785,10 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
 
         // In Picasso/RavenRidge 2, we map the secondary (high) address as well.
         if (g_smu.pm_dram_map_size_alt) {
-            g_smu.pm_table_virt_addr_alt = ioremap_cache(g_smu.pm_dram_base_alt, g_smu.pm_dram_map_size_alt);
+            g_smu.pm_table_virt_addr_alt = ioremap_cache(
+                g_smu.pm_dram_base_alt,
+                g_smu.pm_dram_map_size_alt
+            );
 
             if (g_smu.pm_table_virt_addr_alt == NULL) {
                 pr_err("Failed to map DRAM alt base: %X (0x%X B)", g_smu.pm_dram_base_alt, g_smu.pm_dram_map_size_alt);
@@ -764,6 +797,8 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
         }
     }
 
+    // memcpy() seems to work as well but according to Linux, for physically mapped addresses,
+    //  we should use _fromio().
     memcpy_fromio(dst, g_smu.pm_table_virt_addr, size);
 
     // Append secondary table if required.
