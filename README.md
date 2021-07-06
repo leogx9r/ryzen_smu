@@ -14,6 +14,7 @@ The following processor code names are supported:
 
 - [Colfax](https://en.wikichip.org/wiki/amd/cores/colfax)
 - [Renoir](https://en.wikichip.org/wiki/amd/cores/renoir)
+- [Lucienne](https://en.wikichip.org/wiki/amd/cores/cezanne)
 - [Picasso](https://en.wikichip.org/wiki/amd/cores/picasso)
 - [Matisse](https://en.wikichip.org/wiki/amd/cores/matisse)
 - [Castle Peak](https://en.wikichip.org/wiki/amd/cores/castle_peak)
@@ -247,6 +248,7 @@ enumeration:
 | 0Eh | 14      | Cezanne        |
 | 0Fh | 15      | Milan          |
 | 10h | 16      | Dali           |
+| 11h | 17      | Lucienne       |
 
 Note: This file returns 2 characters of the 'Decimal' encoded index.
 

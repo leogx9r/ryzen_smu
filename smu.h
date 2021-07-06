@@ -81,6 +81,7 @@ enum smu_processor_codename {
     CODENAME_CEZANNE,
     CODENAME_MILAN,
     CODENAME_DALI,
+    CODENAME_LUCIENNE,
 
     CODENAME_COUNT
 };
