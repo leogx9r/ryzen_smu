@@ -663,6 +663,7 @@ u32 smu_update_pmtable_size(u32 version) {
             }
             break;
         case CODENAME_RENOIR:
+        case CODENAME_LUCIENNE:
             switch (version) {
                 case 0x370000:
                     g_smu.pm_dram_map_size = 0x794;
@@ -684,9 +685,6 @@ u32 smu_update_pmtable_size(u32 version) {
                     goto UNKNOWN_PM_TABLE_VERSION;
             }
             break;
-        case CODENAME_LUCIENNE: {
-            goto UNKNOWN_PM_TABLE_VERSION;
-        }
         case CODENAME_CEZANNE:
             switch (version) {
                 case 0x400005:
