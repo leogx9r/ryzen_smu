@@ -43,7 +43,7 @@ The following commands work on all processors supporting MP1 or RSMU:
 | SetTDCLimit               | 0x54           | Arg0:mA                                                  |
 | SetEDCLimit               | 0x55           | Arg0:mA                                                  |
 | SetcHTCLimit              | 0x56           | Arg0:C                                                   |
-| SetPBOScalar              | 0x58           | Arg0:(1000 - (PBO Scalar * 100))                         |
+| SetPBOScalar              | 0x58           | Arg0:(PBO Scalar * 100)                                  |
 | GetFastestCoreOfSocket    | 0x59           | Res0:(16 * BYTE2(Res0)) | (Res0 + 4 * BYTE1(Res0)) & 0xF |
 | SetPROCHOTStatus          | 0x5A           | Arg0:Status, Disabled(0x1000000)                         |
 | EnableOverclocking        | 0x5A           | Arg0:Status, Enabled(0)                                  |
