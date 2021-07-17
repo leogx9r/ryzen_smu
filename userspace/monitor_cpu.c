@@ -570,8 +570,8 @@ void start_pm_monitor(int force) {
         print_line("Package Power", "%8.4f W", pmt->SOCKET_POWER);
         print_line("Peak Core(s) Voltage", "%2.6f V", pmt->CPU_TELEMETRY_VOLTAGE);
         print_line("Average Core Voltage", "%2.6f V", average_voltage);
-        print_line("Package C6", "%3.6f %%", pmt->PC6);
-        print_line("Core C6", "%3.6f %%", total_core_C6);
+        print_line("Package C6 Residency", "%3.6f %%", pmt->PC6);
+        print_line("Core C6 Residency", "%3.6f %%", total_core_C6);
         fprintf(stdout, "╰────────────────────────────────────────────────┴─────────────────────────────────────────────────╯\n");
 
         fprintf(stdout, "╭────────────────────────────────────────────────┬─────────────────────────────────────────────────╮\n");
@@ -579,13 +579,13 @@ void start_pm_monitor(int force) {
         print_line("Current Temperature", "%8.2f C", pmt->THM_VALUE);
         print_line("SoC Temperature", "%8.2f C", pmt->SOC_TEMP);
         print_line("Core Power", "%8.4f W", pmt->VDDCR_CPU_POWER);
-        print_line("SoC Power", "%4.4f W | %4.4f A | %8.6f V", pmt->SOC_TELEMETRY_POWER,
+        print_line("SoC Power", "%4.4f W | %8.4f A | %8.6f V", pmt->SOC_TELEMETRY_POWER,
             pmt->SOC_TELEMETRY_CURRENT, pmt->SOC_TELEMETRY_VOLTAGE);
-        print_line("PPT", "%4.4f W | %7.f W  | %8.2f %%", pmt->PPT_VALUE, pmt->PPT_LIMIT,
+        print_line("PPT", "%4.4f W | %7.0f  W | %8.2f %%", pmt->PPT_VALUE, pmt->PPT_LIMIT,
             (pmt->PPT_VALUE / pmt->PPT_LIMIT * 100));
-        print_line("TDC", "%4.4f A | %7.f A  | %8.2f %%", pmt->TDC_VALUE, pmt->TDC_LIMIT,
+        print_line("TDC", "%4.4f A | %7.0f  A | %8.2f %%", pmt->TDC_VALUE, pmt->TDC_LIMIT,
             (pmt->TDC_VALUE / pmt->TDC_LIMIT * 100));
-        print_line("EDC", "%4.4f A | %7.f A  | %8.2f %%", edc_value, pmt->EDC_LIMIT,
+        print_line("EDC", "%4.4f A | %7.0f  A | %8.2f %%", edc_value, pmt->EDC_LIMIT,
             (edc_value / pmt->EDC_LIMIT * 100));
         print_line("FIT Limit", "%f %%", (pmt->FIT_VALUE / pmt->FIT_LIMIT) * 100.f);
         fprintf(stdout, "╰────────────────────────────────────────────────┴─────────────────────────────────────────────────╯\n");
