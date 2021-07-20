@@ -448,11 +448,28 @@ unsigned int get_max_cpu_freq(smu_obj_t* obj) {
     return args.args[0];
 }
 
+const char* get_pbo_scalar(smu_obj_t* obj) {
+    static char buf[16] = { 0 };
+
+    smu_arg_t args;
+    smu_return_val err;
+
+    if (obj->codename != CODENAME_MATISSE && obj->codename != CODENAME_VERMEER)
+        return 0;
+
+    memset(&args, 0, sizeof(args));
+    if (smu_send_command(obj, 0x6C, &args, TYPE_RSMU) != SMU_Return_OK)
+        return "?";
+
+    sprintf(buf, "%.fx", args.args_f[0]);
+    return buf;
+}
+
 void start_pm_monitor(int force) {
     float total_usage, peak_core_frequency, core_voltage, core_frequency, total_core_voltage,
         average_voltage, package_sleep_time, core_sleep_time, edc_value, total_core_C6;
 
-    const char* name, *codename, *smu_fw_ver;
+    const char* name, *codename, *smu_fw_ver, *scalar;
     unsigned int cores, ccds, ccxs, cores_per_ccx, max_freq, if_ver, i;
     ppm_table_0x240903 pmt;
     unsigned char *pm_buf;
@@ -471,6 +488,7 @@ void start_pm_monitor(int force) {
     codename    = smu_codename_to_str(&obj);
     smu_fw_ver  = smu_get_fw_version(&obj);
     max_freq    = get_max_cpu_freq(&obj);
+    scalar      = get_pbo_scalar(&obj);
 
     get_processor_topology(&ccds, &ccxs, &cores_per_ccx, &cores);
 
@@ -513,6 +531,7 @@ void start_pm_monitor(int force) {
         print_line("Cores Per CCX", "%d", cores_per_ccx);
         if (max_freq)
             print_line("Maximum Frequency", "%d MHz", max_freq);
+        print_line("Overdrive Scalar", scalar);
         print_line("SMU FW Version", "v%s", smu_fw_ver);
         print_line("MP1 IF Version", "v%d", if_ver);
         fprintf(stdout, "╰────────────────────────────────────────────────┴─────────────────────────────────────────────────╯\n");
