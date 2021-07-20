@@ -525,10 +525,7 @@ void start_pm_monitor(int force) {
         fprintf(stdout, "╭────────────────────────────────────────────────┬─────────────────────────────────────────────────╮\n");
         print_line("CPU Model", name);
         print_line("Processor Code Name", codename);
-        print_line("Cores", "%d", cores);
-        print_line("Core CCDs", "%d", ccds);
-        print_line("Core CCXs", "%d", ccxs);
-        print_line("Cores Per CCX", "%d", cores_per_ccx);
+        print_line("Core Configuration", "%d (%d-%d-%d)", cores, ccds, ccxs, cores_per_ccx);
         if (max_freq)
             print_line("Maximum Frequency", "%d MHz", max_freq);
         print_line("Overdrive Scalar", scalar);
