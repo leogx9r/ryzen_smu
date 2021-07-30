@@ -612,7 +612,8 @@ void start_pm_monitor(int force) {
         print_line("Fabric Clock", "%5.f MHz", pmt->FCLK_FREQ);
         print_line("Uncore Clock", "%5.f MHz", pmt->UCLK_FREQ);
         print_line("Memory Clock", "%5.f MHz", pmt->MEMCLK_FREQ);
-        print_line("VDDCR_Mem", "%7.4f W", pmt->VDDIO_MEM_POWER);
+        print_line("DRAM Read Bandwidth", "%3.3f GiB/s", pmt->CS_UMC_READS);
+        print_line("DRAM Write Bandwidth", "%3.3f GiB/s", pmt->CS_UMC_WRITES);
         print_line("VDDIO_Mem", "%7.4f W", pmt->VDDIO_MEM_POWER);
         print_line("VDDCR_SoC", "%7.4f V", pmt->SOC_SET_VOLTAGE);
         print_line("cLDO_VDDM", "%7.4f V", pmt->V_VDDM);
