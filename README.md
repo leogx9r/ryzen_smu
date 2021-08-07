@@ -49,7 +49,7 @@ permissions (for obvious reasons) at the root path `/sys/kernel/ryzen_smu_drv`:
 - `smu_args`
 - `mp1_smu_cmd`
 - `smn`
-- `rsmu_cmd` (Not present on `Rembrandt`, `Vangogh` and `Milan`)
+- `rsmu_cmd` (Not present on `Rembrandt`, `Vangogh`)
 
 For supported PM table models where RSMU is also supported, the following files are additionally
 exposed:
@@ -348,6 +348,8 @@ The following table lists the known characteristics per version:
 | 0x370005 | Renoir      | 0x8C8            |
 |          |             |                  |
 | 0x400005 | Cezanne     | 0x944            |
+|          |             |                  |
+| 0x2D3F00 | Milan       | 0x1AB0           |
 
 Note: File is a 32 bit word encoded in little-endian binary order.
 

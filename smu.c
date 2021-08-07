@@ -272,7 +272,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
     // Zen3 (model IDs for unreleased silicon not confirmed yet)
     else if (cpu_family == 0x19) {
         switch(cpu_model) {
-            case 0x00:
+            case 0x01:
                 g_smu.codename = CODENAME_MILAN;
                 break;
             case 0x20:
@@ -311,6 +311,7 @@ int smu_init(struct pci_dev* dev) {
         case CODENAME_CASTLEPEAK:
         case CODENAME_MATISSE:
         case CODENAME_VERMEER:
+        case CODENAME_MILAN:
             g_smu.addr_rsmu_mb_cmd  = 0x3B10524;
             g_smu.addr_rsmu_mb_rsp  = 0x3B10570;
             g_smu.addr_rsmu_mb_args = 0x3B10A40;
@@ -335,7 +336,6 @@ int smu_init(struct pci_dev* dev) {
             goto LOG_RSMU;
         case CODENAME_VANGOGH:
         case CODENAME_REMBRANDT:
-        case CODENAME_MILAN:
             pr_debug("RSMU Mailbox: Not supported or unknown, disabling use.");
             goto MP1_DETECT;
         default:
@@ -371,6 +371,7 @@ MP1_DETECT:
         case CODENAME_MATISSE:
         case CODENAME_VERMEER:
         case CODENAME_CASTLEPEAK:
+        case CODENAME_MILAN:
             g_smu.mp1_if_ver        = IF_VERSION_11;
             g_smu.addr_mp1_mb_cmd   = 0x3B10530;
             g_smu.addr_mp1_mb_rsp   = 0x3B1057C;
@@ -385,7 +386,6 @@ MP1_DETECT:
             break;
         case CODENAME_VANGOGH:
         case CODENAME_REMBRANDT:
-        case CODENAME_MILAN:
             g_smu.mp1_if_ver       = IF_VERSION_13;
             g_smu.addr_mp1_mb_cmd   = 0x3B10528;
             g_smu.addr_mp1_mb_rsp   = 0x3B10578;
@@ -454,6 +454,7 @@ u64 smu_get_dram_base_address(struct pci_dev* dev) {
         case CODENAME_VERMEER:
         case CODENAME_MATISSE:
         case CODENAME_CASTLEPEAK:
+        case CODENAME_MILAN:
             fn[0] = 0x06;
             goto BASE_ADDR_CLASS_1;
         case CODENAME_RENOIR:
@@ -550,6 +551,7 @@ enum smu_return_val smu_transfer_table_to_dram(struct pci_dev* dev) {
     switch (g_smu.codename) {
         case CODENAME_MATISSE:
         case CODENAME_VERMEER:
+        case CODENAME_MILAN:
             fn = 0x05;
             break;
         case CODENAME_CEZANNE:
@@ -589,6 +591,7 @@ enum smu_return_val smu_get_pm_table_version(struct pci_dev* dev, u32* version) 
             break;
         case CODENAME_MATISSE:
         case CODENAME_VERMEER:
+        case CODENAME_MILAN:
             fn = 0x08;
             break;
         case CODENAME_RENOIR:
@@ -649,6 +652,15 @@ u32 smu_update_pmtable_size(u32 version) {
                     break;
                 case 0x380805:
                     g_smu.pm_dram_map_size = 0x8F0;
+                    break;
+                default:
+                    goto UNKNOWN_PM_TABLE_VERSION;
+            }
+            break;
+        case CODENAME_MILAN:
+            switch (version) {
+                case 0x2D3F00:
+                    g_smu.pm_dram_map_size = 0x1AB0;
                     break;
                 default:
                     goto UNKNOWN_PM_TABLE_VERSION;
@@ -728,7 +740,8 @@ enum smu_return_val smu_read_pm_table(struct pci_dev* dev, unsigned char* dst, s
         if (g_smu.codename == CODENAME_VERMEER ||
             g_smu.codename == CODENAME_MATISSE ||
             g_smu.codename == CODENAME_RENOIR  ||
-            g_smu.codename == CODENAME_CEZANNE) {
+            g_smu.codename == CODENAME_CEZANNE ||
+            g_smu.codename == CODENAME_MILAN) {
             ret = smu_get_pm_table_version(dev, &version);
 
             if (ret != SMU_Return_OK) {
