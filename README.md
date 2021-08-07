@@ -349,7 +349,7 @@ The following table lists the known characteristics per version:
 |          |             |                  |
 | 0x400005 | Cezanne     | 0x944            |
 |          |             |                  |
-| 0x2D3F00 | Milan       | 0x1AB0           |
+| 0x2D0008 | Milan       | 0x1AB0           |
 
 Note: File is a 32 bit word encoded in little-endian binary order.
 

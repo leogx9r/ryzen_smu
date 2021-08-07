@@ -659,7 +659,7 @@ u32 smu_update_pmtable_size(u32 version) {
             break;
         case CODENAME_MILAN:
             switch (version) {
-                case 0x2D3F00:
+                case 0x2D0008:
                     g_smu.pm_dram_map_size = 0x1AB0;
                     break;
                 default:
