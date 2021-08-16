@@ -336,7 +336,7 @@ The following table lists the known characteristics per version:
 |          |             |                  |
 | 0x2D0803 | Vermeer     | 0x894            |
 | 0x380804 | Vermeer     | 0x8A4            |
-| 0x380804 | Vermeer     | 0x8F0            |
+| 0x380805 | Vermeer     | 0x8F0            |
 | 0x2D0903 | Vermeer     | 0x594            |
 | 0x380904 | Vermeer     | 0x5A4            |
 | 0x380905 | Vermeer     | 0x5D0            |
