@@ -603,6 +603,7 @@ void start_pm_monitor(int force) {
             (pmt->TDC_VALUE / pmt->TDC_LIMIT * 100));
         print_line("EDC", "%4.4f A | %7.0f  A | %8.2f %%", edc_value, pmt->EDC_LIMIT,
             (edc_value / pmt->EDC_LIMIT * 100));
+        print_line("Frequency Limit", "%8.0f MHz", pmt->CCLK_LIMIT * 1000.f);
         print_line("FIT Limit", "%f %%", (pmt->FIT_VALUE / pmt->FIT_LIMIT) * 100.f);
         fprintf(stdout, "╰────────────────────────────────────────────────┴─────────────────────────────────────────────────╯\n");
 
