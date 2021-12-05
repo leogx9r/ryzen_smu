@@ -179,6 +179,8 @@ enum smu_return_val smu_send_command(struct pci_dev* dev, u32 op, smu_req_args_t
     if (tmp != SMU_Return_OK && !retries) {
         mutex_unlock(&amd_smu_mutex);
 
+        // The RSP register is still 0, the SMU is still processing the request or has frozen.
+        // Either way the command has timed out so indicate as such.
         if (!tmp) {
             pr_debug("SMU Service Request Failed: Timeout on command (0x%x) after %d attempts.",
                 op, smu_timeout_attempts);
@@ -269,7 +271,7 @@ int smu_resolve_cpu_class(struct pci_dev* dev) {
         return 0;
     }
 
-    // Zen3 (model IDs for unreleased silicon not confirmed yet)
+    // Zen3 (model IDs for unreleased silicon not confirmed yet).
     else if (cpu_family == 0x19) {
         switch(cpu_model) {
             case 0x01:
@@ -403,7 +405,7 @@ MP1_DETECT:
 }
 
 void smu_cleanup(void) {
-    // Unmap DRAM Base if required after SMU use
+    // Unmap DRAM Base if required after SMU use.
     if (g_smu.pm_table_virt_addr) {
         iounmap(g_smu.pm_table_virt_addr);
         g_smu.pm_table_virt_addr = NULL;

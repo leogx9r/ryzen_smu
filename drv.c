@@ -427,4 +427,4 @@ module_init(ryzen_smu_driver_init);
 module_exit(ryzen_smu_driver_exit);
 
 module_param(smu_timeout_attempts, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-MODULE_PARM_DESC(smu_timeout_attempts, "Waits at most, this many milliseconds till an executing SMU command is determined to have timed out. Default: 8192");
+MODULE_PARM_DESC(smu_timeout_attempts, "When executing an SMU command, the driver will retry this many times before considering a command to have timed out. Default: 8192");
