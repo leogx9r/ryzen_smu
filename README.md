@@ -184,25 +184,9 @@ applications, they should make sure this version is within the expected range.
 Lists the current SMU firmware version in relation to the currently installed
 [AGESA](https://en.wikipedia.org/wiki/AGESA).
 
-The following are several lists of SMU to AGESA versions for Matisse on the ComboPiAM4
-(Pre-X570/B550):
+The following are several lists of SMU to AGESA versions:
 
-| SMU Version   | AGESA Version |
-|:-------------:|:-------------:|
-| 46.62         | 1.0.0.6       |
-| 46.54         | 1.0.0.4 B     |
-| 46.53         | 1.0.0.4       |
-| 46.49         | 1.0.0.3 ABBA  |
-| 46.37         | 1.0.0.3 A     |
-| 43.18         | 1.0.0.2 A     |
-
-The following are few known lists of SMU to AGESA RavenPI versions for Raven Ridge and
-Picasso APUs found on various notebooks:
-
-| SMU Version   | AGESA Version |
-|:-------------:|:-------------:|
-| 30.79         | 1.1.0.8       |
-| 30.74         | 1.1.0.6       |
+<img src="pics/smu_versions.jpg" width="1000" height="825">
 
 Note: This file returns a string encoded version represented by the "SMU Version" above.
 
