@@ -1,0 +1,30 @@
+Source: ryzen-smu
+Section: admin
+Priority: optional
+Maintainer: Johan Källström <joka90@gmail.com>
+Uploaders: Johan Källström <joka90@gmail.com>,
+Build-Depends: debhelper-compat (= 13),
+  dkms,
+  dh-modaliases,
+Standards-Version: 4.6.0
+Homepage: https://github.com/leogx9r/ryzen_smu/
+Vcs-Browser: https://github.com/leogx9r/ryzen_smu/
+Vcs-Git: https://github.com/leogx9r/ryzen_smu.git
+Rules-Requires-Root: no
+
+
+Package: ryzen-smu
+Architecture: any
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+         ryzen-smu-dkms (= ${binary:Version}),
+Description: Adjust power management settings for Ryzen Mobile Processors.
+ This is a commandline tool that allows you to adjust power management
+ settings for Ryzen Mobile Processors.
+
+Package: ryzen-smu-dkms
+Architecture: any
+Depends: ${misc:Depends}
+XB-Modaliases: ${modaliases}
+Description: Ryzen SMU kernel driver
+ This DKMS driver provides SMU communication support.
