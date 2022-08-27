@@ -1,0 +1,7 @@
+.debhelper/
+debhelper-build-stamp
+files
+*.substvars
+ryzen-smu/
+ryzen-smu-dkms/
+tmp/

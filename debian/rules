@@ -1,0 +1,33 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/pkg-info.mk
+STAGE_DIR=debian/tmp
+DKMS_SRC=$(STAGE_DIR)/usr/src/ryzen_smu-$(DEB_VERSION_UPSTREAM)
+
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+export DEB_BUILD_MAINT_OPTIONS=hardening=+all
+export DH_VERBOSE = 1
+
+%:
+	dh $@ --with dkms
+
+override_dh_auto_clean:
+	$(RM) -f userspace/monitor_cpu
+
+override_dh_auto_build:
+	$(MAKE) -C userspace/ STRIP=@echo
+
+override_dh_auto_install:
+	dh_auto_install -- prefix=/usr
+	dh_modaliases
+	install -d $(DKMS_SRC)
+	install -m 644 LICENSE $(DKMS_SRC)
+	install -m 644 Makefile $(DKMS_SRC)
+	install -m 644 *.c $(DKMS_SRC)
+	install -m 644 *.h $(DKMS_SRC)
+	install -d $(STAGE_DIR)/usr/bin
+	install -m 755 userspace/monitor_cpu $(STAGE_DIR)/usr/bin/ryzen-smu
+
+override_dh_dkms:
+	dh_dkms -V $(DEB_VERSION_UPSTREAM)

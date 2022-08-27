@@ -1,0 +1,2 @@
+# Load ryzen_smu.ko at boot
+ryzen_smu

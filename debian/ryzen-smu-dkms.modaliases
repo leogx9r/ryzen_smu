@@ -1,0 +1,4 @@
+alias pci:v00001022d00001630sv*sd*bc*sc*i* ryzen_smu
+alias pci:v00001022d00001480sv*sd*bc*sc*i* ryzen_smu
+alias pci:v00001022d000015D0sv*sd*bc*sc*i* ryzen_smu
+alias pci:v00001022d00001450sv*sd*bc*sc*i* ryzen_smu

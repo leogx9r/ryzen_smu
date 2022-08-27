@@ -72,8 +72,8 @@ Be sure kernel headers, dev utilities such as `gcc` and `make` are installed bef
 sudo apt install dkms git build-essential linux-headers-$(uname -r)
 git clone https://gitlab.com/leogx9r/ryzen_smu.git
 cd ryzen_smu
-
-sudo make dkms-install
+dpkg-buildpackage -us -uc
+sudo dpkg -i ../ryzen-smu_*.deb ../ryzen-smu-dkms_*.deb
 ```
 
 ### Arch Linux
